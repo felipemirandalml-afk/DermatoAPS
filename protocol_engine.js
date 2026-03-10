@@ -77,6 +77,10 @@ function scoreProtocolMatch(protocol, data) {
         if (tags.some(t => ['atopica', 'dermatitis', 'eccema', 'liquen', 'hidradenitis'].includes(t))) score += 2;
     }
     if (dist === 'extensor') { if (tags.includes('psoriasis')) score += 2; }
+    if (dist === 'dermatomal') {
+        // S2: Herpes Zóster sigue un patrón dermatomal unilateral
+        if (tags.some(t => ['herpes', 'zoster', 'vesiculas', 'ampollas', 'dolor'].includes(t))) score += 5;
+    }
     if (dist === 'photoexposed') {
         if (tags.some(t => ['queratosis actinica', 'melasma', 'fotoproteccion', 'fitodermatosis'].includes(t))) score += 2;
     }
@@ -110,6 +114,12 @@ function scoreProtocolMatch(protocol, data) {
     if (ctx === 'pediatric') {
         if (tags.some(t => ['atopica', 'dermatitis', 'pediatrico'].includes(t))) score += 3;
     }
+    if (ctx === 'pregnancy') {
+        // S4: En embarazo preferir protocolos de baja potencia / seguros
+        if (tags.some(t => ['atopica', 'humectacion', 'hidrocortisona', 'dermatitis', 'prurito'].includes(t))) score += 2;
+        // Penalizar protocolos con medicamentos contraindicados en embarazo
+        if (tags.some(t => ['isotretinoina', 'doxiciclina', 'terbinafina', 'metronidazol'].includes(t))) score -= 3;
+    }
 
     // --- Number of lesions ---
     if (num === 'generalized') {
@@ -128,6 +138,11 @@ function scoreProtocolMatch(protocol, data) {
         if (tags.includes('alopecia')) score += 3;
     }
 
+    // --- S1: Penalización por edad en acné ---
+    if (data.age && data.age > 40) {
+        if (tags.includes('acne')) score -= 2;
+    }
+
     return score;
 }
 
@@ -144,7 +159,7 @@ function findMatchingProtocols(data) {
     }));
 
     scored.sort((a, b) => b.score - a.score);
-    const top3 = scored.slice(0, 3).filter(item => item.score > 0);
+    const top3 = scored.slice(0, 3).filter(item => item.score >= 3);
 
     return top3.map(item => ({
         ...item.protocol,

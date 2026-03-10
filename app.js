@@ -71,6 +71,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentAnalysisData = null; // Store for export
 
+    // C1/C2/C3 — Mapa de localización: valores internos → español
+    const LABELS = {
+        sex: { male: 'Masculino', female: 'Femenino', other: 'No especificado', '': '—' },
+        symptoms: { pruritus: 'Prurito (Picazón)', pain: 'Dolor', burning: 'Ardor', asymptomatic: 'Asintomático', '': '—' },
+        numberLesions: { single: 'Única', multiple: 'Múltiples', generalized: 'Generalizadas', '': '—' },
+        location: { face: 'Cara', scalp: 'Cuero cabelludo', trunk: 'Tronco', 'upper limbs': 'Extremidades Superiores', 'lower limbs': 'Extremidades Inferiores', 'genital area': 'Zona Genital', '': '—' },
+        morphology: { 'macule/patch': 'Mácula / Mancha', 'papule/plaque': 'Pápula / Placa', 'vesicle/blister': 'Vesícula / Ampolla', 'crusted lesion': 'Lesión Costrosa', 'pigmented lesion': 'Lesión Pigmentada', 'scaling lesion': 'Lesión Descamativa', 'ulcerated lesion': 'Lesión Ulcerada', '': '—' },
+        distribution: { localized: 'Localizado', bilateral: 'Bilateral / Simétrico', dermatomal: 'Dermatomal', flexural: 'Flexural', extensor: 'Extensor', photoexposed: 'Fotoexpuesto', '': '—' },
+        systemic: { none: 'Ninguno', fever: 'Fiebre / Compromiso general', swelling: 'Edema significativo', '': '—' },
+        specialContext: { none: 'Ninguno', pediatric: 'Paciente pediátrico', pregnancy: 'Embarazo', immunosuppressed: 'Inmunosuprimido', '': '—' }
+    };
+    /** Traduce un valor interno al label en español */
+    function loc(category, value) {
+        return (LABELS[category] && LABELS[category][value]) ? LABELS[category][value] : (value || '—');
+    }
+
     // M7 — Show PROTOCOL_DB_VERSION in footer
     const dbVersionEl = document.getElementById('db-version');
     if (dbVersionEl && typeof PROTOCOL_DB_VERSION !== 'undefined') {
@@ -80,6 +96,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // M9 — New case button
     const newCaseBtn = document.getElementById('new-case-btn');
     newCaseBtn.addEventListener('click', resetForm);
+
+    /** Show toast notification (U1) */
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : type === 'warning' ? '⚠️' : 'ℹ️';
+        toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
 
     function resetForm() {
         // Reset all selects and inputs in the form
@@ -277,13 +308,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.addEventListener('change', () => el.closest('.field')?.classList.remove('field-error'), { once: true });
         });
         if (missingFields.length > 0) {
-            alert(`Por favor complete los siguientes campos obligatorios:\n• ${missingFields.join('\n• ')}`);
+            showToast(`Complete los campos obligatorios: ${missingFields.join(', ')}`, 'warning');
             return;
         }
 
         // Validate Consent
         if (!consentCheckbox.checked) {
-            alert('Debe aceptar el Consentimiento Informado para continuar con el análisis.');
+            showToast('Debe aceptar el Consentimiento Informado para continuar.', 'warning');
             return;
         }
 
@@ -313,11 +344,12 @@ document.addEventListener('DOMContentLoaded', () => {
     //    // It would return bounding boxes, lesion categories with confidence scores, and image quality metrics.
     // }
 
-    function saveToDataset(data, analysis, protocolMatches) {
+    function saveToDataset(data, analysis, protocolMatches, meta) {
         try {
             const dataset = JSON.parse(localStorage.getItem('derm-triage-dataset') || '[]');
             dataset.push({
                 timestamp: new Date().toISOString(),
+                meta: meta || null,
                 input: data,
                 triageLevel: analysis.triageLevel,
                 triageExplanation: analysis.explanation,
@@ -341,8 +373,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function runAnalysis(data) {
         const analysis = evaluateTriage(data);
         const protocolMatches = findMatchingProtocols(data);
-        saveToDataset(data, analysis, protocolMatches);
-        displayResults(data, analysis, protocolMatches);
+        const now = new Date();
+        const meta = {
+            caseId: 'CAS-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+            dateStr: now.toLocaleDateString(),
+            timeStr: now.toLocaleTimeString()
+        };
+        saveToDataset(data, analysis, protocolMatches, meta);
+        displayResults(data, analysis, protocolMatches, meta);
         renderSessionHistory(); // M1
     }
 
@@ -529,13 +567,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const triageIcon = { RED: '🔴', YELLOW: '🟡', GREEN: '🟢' };
         list.innerHTML = recent.map(entry => {
             const meta = entry.meta || {};
-            const id = entry.input ? ('CAS-' + meta.caseId || '?') : '?';
             const triage = entry.triageLevel || '?';
             const icon = triageIcon[triage] || '⚪';
             const dx = entry.bestProtocol?.diagnosis_short || entry.suggestedCategories?.[0] || 'Sin diagnóstico';
+            const caseId = meta.caseId ? meta.caseId : '—';
             const time = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             return `
             <li class="history-item">
+                <span class="hist-id">${caseId}</span>
                 <span class="hist-triage">${icon} ${triage}</span>
                 <span class="hist-dx">${dx}</span>
                 <span class="hist-time">${time}</span>
@@ -580,7 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    function displayResults(data, analysis, precomputedProtocolMatches) {
+    function displayResults(data, analysis, precomputedProtocolMatches, incomingMeta) {
         // Toggle visibility
         emptyResults.classList.add('hidden');
         resultsContent.classList.remove('hidden');
@@ -594,13 +633,14 @@ document.addEventListener('DOMContentLoaded', () => {
             card.classList.add('fade-in');
         });
 
-        // Generate Metadata
-        const oldData = currentAnalysisData?.meta;
-        const caseId = oldData ? oldData.caseId : 'CAS-' + Math.random().toString(36).slice(2, 8).toUpperCase();
-        const now = new Date();
-        const dateStr = oldData ? oldData.dateStr : now.toLocaleDateString();
-        const timeStr = oldData ? oldData.timeStr : now.toLocaleTimeString();
-        currentAnalysisData = { formData: data, analysis: analysis, meta: { caseId, dateStr, timeStr } };
+        // Use meta from runAnalysis (single source of truth for caseId)
+        const meta = incomingMeta || {
+            caseId: 'CAS-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+            dateStr: new Date().toLocaleDateString(),
+            timeStr: new Date().toLocaleTimeString()
+        };
+        const { caseId, dateStr, timeStr } = meta;
+        currentAnalysisData = { formData: data, analysis: analysis, meta };
 
         document.getElementById('meta-id').textContent = `ID: ${caseId}`;
         document.getElementById('meta-date').textContent = `Fecha: ${dateStr}`;
@@ -608,16 +648,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // 1. Render Clinical Summary
         clinicalSummaryList.innerHTML = `
-            <li><span class="summary-label">Sexo</span><span class="summary-value" style="text-transform: capitalize;">${data.sex}</span></li>
+            <li><span class="summary-label">Sexo</span><span class="summary-value">${loc('sex', data.sex)}</span></li>
             <li><span class="summary-label">Edad</span><span class="summary-value">${data.age} años</span></li>
             <li><span class="summary-label">Evolución</span><span class="summary-value">${data.duration}</span></li>
-            <li><span class="summary-label">Síntomas</span><span class="summary-value" style="text-transform: capitalize;">${data.symptoms}</span></li>
-            <li><span class="summary-label">N° Lesiones</span><span class="summary-value" style="text-transform: capitalize;">${data.numberLesions}</span></li>
-            <li><span class="summary-label">Ubicación</span><span class="summary-value" style="text-transform: capitalize;">${data.location}</span></li>
-            <li><span class="summary-label">Morfología</span><span class="summary-value" style="text-transform: capitalize;">${data.morphology}</span></li>
-            <li><span class="summary-label">Distribución</span><span class="summary-value" style="text-transform: capitalize;">${data.distribution}</span></li>
-            <li><span class="summary-label">Contexto Clínico</span><span class="summary-value" style="text-transform: capitalize;">${data.specialContext}</span></li>
-            <li><span class="summary-label">Sistémico</span><span class="summary-value" style="text-transform: capitalize;">${data.systemic}</span></li>
+            <li><span class="summary-label">Síntomas</span><span class="summary-value">${loc('symptoms', data.symptoms)}</span></li>
+            <li><span class="summary-label">N° Lesiones</span><span class="summary-value">${loc('numberLesions', data.numberLesions)}</span></li>
+            <li><span class="summary-label">Ubicación</span><span class="summary-value">${loc('location', data.location)}</span></li>
+            <li><span class="summary-label">Morfología</span><span class="summary-value">${loc('morphology', data.morphology)}</span></li>
+            <li><span class="summary-label">Distribución</span><span class="summary-value">${loc('distribution', data.distribution)}</span></li>
+            <li><span class="summary-label">Contexto Clínico</span><span class="summary-value">${loc('specialContext', data.specialContext)}</span></li>
+            <li><span class="summary-label">Sistémico</span><span class="summary-value">${loc('systemic', data.systemic)}</span></li>
             ${data.clinicalNotes ? `<li style="grid-column: 1 / -1; margin-top: 0.5rem;"><span class="summary-label">Notas</span><span class="summary-value">${escapeHtml(data.clinicalNotes)}</span></li>` : ''}
         `;
 
@@ -777,7 +817,7 @@ ${protocolBlock}
             }, 2000);
         }).catch(err => {
             console.error('Failed to copy text: ', err);
-            alert("No se pudo copiar el texto al portapapeles. Ve la consola para detalles.");
+            showToast("No se pudo copiar el texto al portapapeles.", "error");
         });
     });
 
@@ -814,7 +854,7 @@ ${protocolBlock}
             }, 2000);
         }).catch(err => {
             console.error('Failed to copy JSON: ', err);
-            alert("No se pudo copiar el JSON al portapapeles.");
+            showToast("No se pudo copiar el JSON al portapapeles.", "error");
         });
     });
 
@@ -852,7 +892,7 @@ ${protocolBlock}
             }, 2000);
         }).catch(err => {
             console.error('Failed to copy text: ', err);
-            alert("No se pudo copiar el texto al portapapeles.");
+            showToast("No se pudo copiar el texto al portapapeles.", "error");
         });
     });
 });

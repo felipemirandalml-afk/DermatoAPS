@@ -20,6 +20,8 @@
     --info-bg: #eff6ff;
     --info-border: #bfdbfe;
     --info-text: #1e40af;
+    --toast-bg: #1e293b;
+    --toast-text: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -1117,4 +1119,96 @@ select:focus {
     font-size: 0.78rem;
     opacity: 0.7;
     font-family: monospace;
+}
+
+/* Toast Notifications (U1) */
+.toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+
+.toast {
+    background-color: var(--toast-bg);
+    color: var(--toast-text);
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    font-size: 0.9rem;
+    font-weight: 500;
+    min-width: 250px;
+    max-width: 400px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    pointer-events: auto;
+    animation: toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    border-left: 4px solid var(--primary-color);
+}
+
+.toast.toast-error {
+    border-left-color: var(--danger-border);
+}
+
+.toast.toast-success {
+    border-left-color: var(--success-border);
+}
+
+.toast.toast-warning {
+    border-left-color: var(--warning-border);
+}
+
+.toast.fade-out {
+    animation: toast-out 0.3s forwards;
+}
+
+@keyframes toast-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toast-out {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* UI Cleanup classes (H1/H2) */
+.clinical-notes-textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: inherit;
+    resize: vertical;
+}
+
+.case-metadata-container {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
 }

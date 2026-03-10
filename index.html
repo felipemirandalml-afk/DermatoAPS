@@ -35,9 +35,12 @@
         <section class="demo-section">
             <p class="demo-label">Cargar Caso de Prueba:</p>
             <div class="demo-buttons">
-                <button class="demo-btn" id="demo-eczema">Probable Eccema (APS)</button>
-                <button class="demo-btn" id="demo-fungal">Infección Fúngica (TeleDerm)</button>
-                <button class="demo-btn" id="demo-melanoma">Lesión Sospechosa (Alarma Roja)</button>
+                <button class="demo-btn" id="demo-eczema" aria-label="Caso ejemplo de Eccema">Probable Eccema
+                    (APS)</button>
+                <button class="demo-btn" id="demo-fungal" aria-label="Caso ejemplo de Infección Fúngica">Infección
+                    Fúngica (TeleDerm)</button>
+                <button class="demo-btn" id="demo-melanoma" aria-label="Caso ejemplo de Sospecha Melanoma">Lesión
+                    Sospechosa (Alarma Roja)</button>
             </div>
         </section>
 
@@ -225,7 +228,7 @@
                         <label for="clinical-notes">Observaciones clínicas (opcional)</label>
                         <textarea id="clinical-notes" rows="3" maxlength="300"
                             placeholder="Añada notas breves de contexto (máx. 300 caracteres)..."
-                            style="width: 100%; padding: 0.5rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--text-primary); font-family: inherit; resize: vertical;"></textarea>
+                            class="clinical-notes-textarea"></textarea>
                     </div>
 
                     <!-- Consentimiento -->
@@ -264,8 +267,7 @@
                             caso</button>
                     </div>
 
-                    <div id="case-metadata" class="case-metadata"
-                        style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                    <div id="case-metadata" class="case-metadata-container">
                         <span id="meta-id">ID: -</span>
                         <span id="meta-date">Fecha: -</span>
                         <span id="meta-time">Hora: -</span>
@@ -382,7 +384,7 @@
                                 📄 Generar Resumen Clínico (Formato SIC)
                             </button>
                             <button id="export-json-btn" class="secondary-button outline">
-                                {" "} Exportar Datos (JSON)
+                                📦 Exportar Datos (JSON)
                             </button>
                         </div>
                     </div>
@@ -398,6 +400,11 @@
                 protocol_engine.js</p>
         </div>
     </footer>
+
+    </footer>
+
+    <!-- Toast Notifications Container (U1) -->
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="protocol_db.js"></script>
     <script src="protocol_engine.js"></script>
