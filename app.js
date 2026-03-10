@@ -1,23 +1,13 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Register Service Worker
-    /* 
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('SW registered!'))
-                .catch(err => console.log('SW registration failed: ', err));
-        });
-    }
-    */
-    // TEMPORARY: Unregister SW for testing
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-            for (let registration of registrations) {
-                registration.unregister();
-            }
-        });
-    }
+// Register Service Worker for PWA offline support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('[SW] Registered, scope:', reg.scope))
+            .catch(err => console.warn('[SW] Registration failed:', err));
+    });
+}
 
+document.addEventListener('DOMContentLoaded', () => {
     // Theme Management
     const themeToggle = document.getElementById('theme-toggle');
     const savedTheme = localStorage.getItem('derm-theme');
@@ -80,6 +70,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let currentAnalysisData = null; // Store for export
+
+    // M7 — Show PROTOCOL_DB_VERSION in footer
+    const dbVersionEl = document.getElementById('db-version');
+    if (dbVersionEl && typeof PROTOCOL_DB_VERSION !== 'undefined') {
+        dbVersionEl.textContent = PROTOCOL_DB_VERSION;
+    }
+
+    // M9 — New case button
+    const newCaseBtn = document.getElementById('new-case-btn');
+    newCaseBtn.addEventListener('click', resetForm);
+
+    function resetForm() {
+        // Reset all selects and inputs in the form
+        document.querySelectorAll('.input-section select').forEach(s => { s.selectedIndex = 0; });
+        document.querySelectorAll('.input-section input[type="number"]').forEach(i => { i.value = ''; });
+        document.querySelectorAll('.input-section input[type="checkbox"]').forEach(c => { c.checked = false; });
+        document.querySelector('#clinical-notes').value = '';
+        consentCheckbox.checked = false;
+        // Reset image previews
+        document.querySelectorAll('.file-upload-wrapper img').forEach(img => { img.classList.add('hidden'); img.src = ''; });
+        document.querySelectorAll('.upload-content').forEach(uc => { uc.classList.remove('hidden'); });
+        document.querySelectorAll('.upload-error').forEach(e => { e.classList.add('hidden'); });
+        // Clear field errors
+        document.querySelectorAll('.field-error').forEach(f => f.classList.remove('field-error'));
+        // Hide ABCDE
+        abcdeContainer.classList.add('hidden');
+        // Reset results panel
+        emptyResults.classList.remove('hidden');
+        resultsContent.classList.add('hidden');
+        newCaseBtn.classList.add('hidden');
+        currentAnalysisData = null;
+    }
 
     // Handle Dual Image Uploads
     function setupImageUpload(dropZoneId, inputId, previewId, errorId) {
@@ -194,6 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 
+    /** Escapes potentially unsafe HTML characters from user text input. */
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     // --- Form Submission ---
     analyzeBtn.addEventListener('click', () => {
         const data = {
@@ -217,9 +250,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Validate Form Data 
-        if (!data.age || !data.duration || !data.morphology) {
-            alert('Por favor complete al menos la Edad, el Tiempo de evolución y la Morfología para continuar.');
+        // Validate Form Data with error highlighting (M10)
+        const requiredMap = [
+            { value: data.age, fieldId: 'age', label: 'Edad' },
+            { value: data.duration, fieldId: 'duration', label: 'Tiempo de evolución' },
+            { value: data.morphology, fieldId: 'morphology', label: 'Morfología' },
+            { value: data.symptoms, fieldId: 'symptoms', label: 'Síntoma principal' },
+            { value: data.location, fieldId: 'location', label: 'Localización anatómica' },
+        ];
+        // Clear previous errors
+        requiredMap.forEach(({ fieldId }) => {
+            const el = document.getElementById(fieldId);
+            if (el) el.closest('.field')?.classList.remove('field-error');
+        });
+        // Collect missing
+        const missingFields = requiredMap
+            .filter(({ value }) => !value)
+            .map(({ fieldId, label }) => {
+                const el = document.getElementById(fieldId);
+                if (el) el.closest('.field')?.classList.add('field-error');
+                return label;
+            });
+        // Auto-clear error on change
+        requiredMap.forEach(({ fieldId }) => {
+            const el = document.getElementById(fieldId);
+            if (el) el.addEventListener('change', () => el.closest('.field')?.classList.remove('field-error'), { once: true });
+        });
+        if (missingFields.length > 0) {
+            alert(`Por favor complete los siguientes campos obligatorios:\n• ${missingFields.join('\n• ')}`);
             return;
         }
 
@@ -255,7 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //    // It would return bounding boxes, lesion categories with confidence scores, and image quality metrics.
     // }
 
-    function saveToDataset(data, analysis) {
+    function saveToDataset(data, analysis, protocolMatches) {
         try {
             const dataset = JSON.parse(localStorage.getItem('derm-triage-dataset') || '[]');
             dataset.push({
@@ -263,7 +321,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 input: data,
                 triageLevel: analysis.triageLevel,
                 triageExplanation: analysis.explanation,
-                suggestedCategories: analysis.categories
+                suggestedCategories: analysis.categories,
+                protocolMatches: (protocolMatches || []).map(p => ({
+                    id: p.id,
+                    diagnosis_short: p.diagnosis_short,
+                    triage_seed: p.triage_seed,
+                    score: p._score
+                })),
+                bestProtocol: protocolMatches && protocolMatches[0]
+                    ? { id: protocolMatches[0].id, diagnosis_short: protocolMatches[0].diagnosis_short, triage_seed: protocolMatches[0].triage_seed }
+                    : null
             });
             localStorage.setItem('derm-triage-dataset', JSON.stringify(dataset));
         } catch (e) {
@@ -273,8 +340,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function runAnalysis(data) {
         const analysis = evaluateTriage(data);
-        saveToDataset(data, analysis);
-        displayResults(data, analysis);
+        const protocolMatches = findMatchingProtocols(data);
+        saveToDataset(data, analysis, protocolMatches);
+        displayResults(data, analysis, protocolMatches);
+        renderSessionHistory(); // M1
     }
 
     function evaluateTriage(data) {
@@ -399,221 +468,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================
-    // PROTOCOL ENGINE — Basado en PROTOCOL_DB (protocol_db.js)
+    // PROTOCOL ENGINE — funciones en protocol_engine.js
+    // (scoreProtocolMatch, findMatchingProtocols, buildMatchReason,
+    //  formatManagementText, formatEducationText, toTitleCase)
     // =========================================================
 
-    /**
-     * scoreProtocolMatch(protocol, formData)
-     * Assigns a numeric relevance score to a protocol entry given the current form data.
-     */
-    function scoreProtocolMatch(protocol, data) {
-        let score = 0;
-        const tags = protocol.tags;
-        const m = data.morphology || '';
-        const sym = data.symptoms || '';
-        const loc = data.location || '';
-        const dist = data.distribution || '';
-        const dur = data.duration || '';
-        const num = data.numberLesions || '';
-        const ctx = data.specialContext || '';
-        const id = protocol.id;
 
-        // --- Morphology-based rules ---
-        if (m === 'scaling lesion') {
-            // Psoriasis / Pitiriasis / Eccema / Dermatitis seborreica
-            if (tags.some(t => ['psoriasis', 'descamacion', 'pitiriasis', 'eccema', 'seborreica', 'numular', 'hipostatico'].includes(t))) score += 4;
-            // Onicomicosis if nails
-            if (loc === 'lower limbs' && tags.includes('onicomicosis')) score += 2;
-        }
-        if (m === 'papule/plaque') {
-            if (tags.some(t => ['acne', 'rosacea', 'foliculitis', 'psoriasis', 'liquen'].includes(t))) score += 3;
-        }
-        if (m === 'macule/patch') {
-            if (tags.some(t => ['vitiligo', 'melasma', 'pitiriasis', 'manchas', 'hipopigmentacion', 'hiperpigmentacion'].includes(t))) score += 3;
-            if (tags.some(t => ['dermatitis', 'atopica', 'eczema', 'eccema'].includes(t))) score += 2;
-        }
-        if (m === 'vesicle/blister') {
-            if (tags.some(t => ['dishidrosis', 'vesiculas', 'ampollas'].includes(t))) score += 4;
-        }
-        if (m === 'pigmented lesion') {
-            if (tags.some(t => ['lesion pigmentada', 'queratosis actinica', 'cancer de piel'].includes(t))) score += 5;
-            const abcdeCount = Object.values(data.abcde || {}).filter(Boolean).length;
-            if (abcdeCount >= 2) score += 3;
-        }
-        if (m === 'ulcerated lesion') {
-            if (tags.some(t => ['queratosis actinica', 'cancer de piel', 'derivar'].includes(t))) score += 4;
-        }
-        if (m === 'crusted lesion') {
-            if (tags.some(t => ['foliculitis', 'acne', 'queratosis actinica'].includes(t))) score += 2;
-        }
-
-        // --- Location-based rules ---
-        if (loc === 'face') {
-            if (tags.some(t => ['acne', 'rosacea', 'rostro', 'facial', 'melasma', 'seborreica', 'dermatitis'].includes(t))) score += 3;
-        }
-        if (loc === 'scalp') {
-            if (tags.some(t => ['cuero cabelludo', 'alopecia', 'seborreica', 'psoriasis'].includes(t))) score += 3;
-        }
-        if (loc === 'lower limbs') {
-            if (tags.some(t => ['hipostatico', 'numular', 'piernas', 'onicomicosis', 'insuficiencia venosa'].includes(t))) score += 2;
-        }
-        if (loc === 'upper limbs') {
-            if (tags.some(t => ['dishidrosis', 'palmas', 'eccema', 'liquen'].includes(t))) score += 2;
-        }
-
-        // --- Distribution-based rules ---
-        if (dist === 'flexural') {
-            if (tags.some(t => ['atopica', 'dermatitis', 'eccema', 'liquen', 'hidradenitis'].includes(t))) score += 2;
-        }
-        if (dist === 'extensor') {
-            if (tags.includes('psoriasis')) score += 2;
-        }
-        if (dist === 'photoexposed') {
-            if (tags.some(t => ['queratosis actinica', 'melasma', 'fotoproteccion', 'fitodermatosis'].includes(t))) score += 2;
-        }
-        if (dist === 'bilateral') {
-            if (tags.some(t => ['vitiligo', 'psoriasis', 'eccema', 'dishidrosis', 'dermatitis'].includes(t))) score += 1;
-        }
-
-        // --- Symptoms-based rules ---
-        if (sym === 'pruritus') {
-            if (tags.some(t => ['prurito', 'atopica', 'eccema', 'urticaria', 'contacto', 'liquen', 'dishidrosis', 'fitodermatosis'].includes(t))) score += 2;
-        }
-        if (sym === 'pain' || sym === 'burning') {
-            if (tags.some(t => ['hidradenitis', 'foliculitis', 'queratosis actinica'].includes(t))) score += 1;
-        }
-        if (sym === 'asymptomatic') {
-            if (tags.some(t => ['vitiligo', 'melasma', 'acantosis nigricans', 'pitiriasis'].includes(t))) score += 2;
-        }
-
-        // --- Duration-based rules ---
-        if (dur === '> 3 months') {
-            if (tags.some(t => ['cronico', 'psoriasis', 'vitiligo', 'liquen', 'onicomicosis', 'hidradenitis', 'alopecia'].includes(t))) score += 2;
-        }
-        if (dur === '< 1 week' || dur === '1–4 weeks') {
-            if (tags.some(t => ['urticaria aguda', 'contacto', 'fitodermatosis', 'dermatitis medicamentosa'].includes(t))) score += 2;
-        }
-
-        // --- Special context ---
-        if (ctx === 'immunosuppressed') {
-            if (tags.some(t => ['hongos', 'onicomicosis', 'pitiriasis', 'dermatitis'].includes(t))) score += 2;
-        }
-        if (ctx === 'pediatric') {
-            if (tags.some(t => ['atopica', 'dermatitis', 'pediatrico'].includes(t))) score += 3;
-        }
-
-        // --- Number of lesions ---
-        if (num === 'generalized') {
-            if (tags.some(t => ['generalizado', 'urticaria', 'psoriasis', 'pitiriasis', 'vitiligo'].includes(t))) score += 2;
-        }
-        if (num === 'single') {
-            if (tags.some(t => ['verruga', 'queratosis actinica', 'localizado'].includes(t))) score += 1;
-        }
-
-        // Nail involvement note in clinical notes
-        const notes = (data.clinicalNotes || '').toLowerCase();
-        if (notes.includes('uñas') || notes.includes('onicomicosis')) {
-            if (tags.includes('onicomicosis')) score += 3;
-        }
-        if (notes.includes('pelo') || notes.includes('caída') || notes.includes('alopecia')) {
-            if (tags.includes('alopecia')) score += 3;
-        }
-
-        return score;
-    }
-
-    /**
-     * findMatchingProtocols(formData)
-     * Returns top 3 protocol objects with their score and a brief match reason.
-     */
-    function findMatchingProtocols(data) {
-        if (typeof PROTOCOL_DB === 'undefined' || !Array.isArray(PROTOCOL_DB)) return [];
-
-        const scored = PROTOCOL_DB.map(protocol => ({
-            protocol,
-            score: scoreProtocolMatch(protocol, data)
-        }));
-
-        scored.sort((a, b) => b.score - a.score);
-        const top3 = scored.slice(0, 3).filter(item => item.score > 0);
-
-        return top3.map(item => ({
-            ...item.protocol,
-            _score: item.score,
-            _matchReason: buildMatchReason(item.protocol, data)
-        }));
-    }
-
-    function buildMatchReason(protocol, data) {
-        const tags = protocol.tags;
-        const reasons = [];
-        if (data.morphology && tags.some(t => data.morphology.toLowerCase().split(/[\/\s]/).some(w => t.includes(w)))) {
-            reasons.push(`morfología compatible`);
-        }
-        if (data.location && tags.some(t => data.location.toLowerCase().split(/[\s]/).some(w => t.includes(w)))) {
-            reasons.push(`ubicación relacionada`);
-        }
-        if (data.symptoms && tags.some(t => t.includes(data.symptoms.toLowerCase()))) {
-            reasons.push(`síntomas compatibles`);
-        }
-        if (data.distribution && tags.some(t => t.includes(data.distribution.toLowerCase()))) {
-            reasons.push(`patrón de distribución coincidente`);
-        }
-        if (reasons.length === 0) reasons.push('asociación clínica por contexto');
-        return reasons.slice(0, 2).join(', ');
-    }
-
-    /**
-     * formatManagementText(rawText)
-     * Converts numbered all-caps protocol text into readable HTML.
-     */
-    function formatManagementText(raw) {
-        if (!raw) return '';
-        // Split by numbered steps like "1.- " or "2.-" or "3."
-        const lines = raw
-            .replace(/DADO LO ANTERIOR,\s*LA SUGERENCIA DE MANEJO ES:\s*/i, '')
-            .split(/(?=\d+\.[-–]?\s)/)
-            .map(s => s.trim())
-            .filter(Boolean);
-
-        if (lines.length <= 1) {
-            // No numbered structure — wrap as paragraph
-            return `<p>${toTitleCase(raw.replace(/DADO LO ANTERIOR,\s*LA SUGERENCIA DE MANEJO ES:\s*/i, '').trim())}</p>`;
-        }
-
-        const items = lines.map(line => {
-            // Strip leading number+dash and convert to sentence case
-            const clean = line.replace(/^\d+\.[-–]?\s*/, '').trim();
-            return `<li>${toTitleCase(clean)}</li>`;
-        }).join('');
-
-        return `<ol class="protocol-management-list">${items}</ol>`;
-    }
-
-    /**
-     * formatEducationText(rawText)
-     * Converts all-caps educational text to readable paragraphs.
-     */
-    function formatEducationText(raw) {
-        if (!raw) return '';
-        const clean = raw
-            .replace(/^"\s*|\s*"$/g, '') // remove surrounding quotes
-            .trim();
-        // Split into paragraphs by double-newline or numbered lines
-        const paragraphs = clean.split(/\n{1,}/).map(p => p.trim()).filter(Boolean);
-        if (paragraphs.length <= 1) {
-            return `<p>${toTitleCase(clean)}</p>`;
-        }
-        return paragraphs.map(p => `<p>${toTitleCase(p)}</p>`).join('');
-    }
-
-    /** Simple title-case converter for Spanish all-caps clinical text */
-    function toTitleCase(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
-            // Fix common abbreviations that should stay uppercase
-            .replace(/\b(aps|spf|fps|mcg|mg|ml|grs|vhs|tsh|t4|ana|csp|sos|ges|vdrl|ldr)\b/gi, m => m.toUpperCase())
-            .replace(/\b([A-ZÁÉÍÓÚÜÑ]{2,})\b/g, m => m.charAt(0) + m.slice(1).toLowerCase());
-    }
 
     /**
      * renderProtocolMatches(matches)
@@ -643,6 +503,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
 
         diagnosticCategories.innerHTML = html;
+    }
+
+    /**
+     * M1 — renderSessionHistory()
+     * Reads derm-triage-dataset from localStorage and renders the last 5 cases
+     * in the session history panel.
+     */
+    function renderSessionHistory() {
+        const panel = document.getElementById('session-history-panel');
+        const list = document.getElementById('session-history-list');
+        const countEl = document.getElementById('history-count');
+        if (!panel || !list) return;
+
+        const dataset = JSON.parse(localStorage.getItem('derm-triage-dataset') || '[]');
+        const recent = dataset.slice(-5).reverse();
+        countEl.textContent = dataset.length;
+
+        if (recent.length === 0) {
+            panel.classList.add('hidden');
+            return;
+        }
+        panel.classList.remove('hidden');
+
+        const triageIcon = { RED: '🔴', YELLOW: '🟡', GREEN: '🟢' };
+        list.innerHTML = recent.map(entry => {
+            const meta = entry.meta || {};
+            const id = entry.input ? ('CAS-' + meta.caseId || '?') : '?';
+            const triage = entry.triageLevel || '?';
+            const icon = triageIcon[triage] || '⚪';
+            const dx = entry.bestProtocol?.diagnosis_short || entry.suggestedCategories?.[0] || 'Sin diagnóstico';
+            const time = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            return `
+            <li class="history-item">
+                <span class="hist-triage">${icon} ${triage}</span>
+                <span class="hist-dx">${dx}</span>
+                <span class="hist-time">${time}</span>
+            </li>`;
+        }).join('');
     }
 
     /**
@@ -682,14 +580,23 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    function displayResults(data, analysis) {
+    function displayResults(data, analysis, precomputedProtocolMatches) {
         // Toggle visibility
         emptyResults.classList.add('hidden');
         resultsContent.classList.remove('hidden');
+        newCaseBtn.classList.remove('hidden'); // M9
+
+        // M8 — Animate result cards
+        resultsContent.querySelectorAll('.result-card').forEach((card, i) => {
+            card.classList.remove('fade-in');
+            void card.offsetWidth; // force reflow
+            card.style.animationDelay = `${i * 0.05}s`;
+            card.classList.add('fade-in');
+        });
 
         // Generate Metadata
         const oldData = currentAnalysisData?.meta;
-        const caseId = oldData ? oldData.caseId : 'CAS-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+        const caseId = oldData ? oldData.caseId : 'CAS-' + Math.random().toString(36).slice(2, 8).toUpperCase();
         const now = new Date();
         const dateStr = oldData ? oldData.dateStr : now.toLocaleDateString();
         const timeStr = oldData ? oldData.timeStr : now.toLocaleTimeString();
@@ -711,7 +618,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <li><span class="summary-label">Distribución</span><span class="summary-value" style="text-transform: capitalize;">${data.distribution}</span></li>
             <li><span class="summary-label">Contexto Clínico</span><span class="summary-value" style="text-transform: capitalize;">${data.specialContext}</span></li>
             <li><span class="summary-label">Sistémico</span><span class="summary-value" style="text-transform: capitalize;">${data.systemic}</span></li>
-            ${data.clinicalNotes ? `<li style="grid-column: 1 / -1; margin-top: 0.5rem;"><span class="summary-label">Notas</span><span class="summary-value">${data.clinicalNotes}</span></li>` : ''}
+            ${data.clinicalNotes ? `<li style="grid-column: 1 / -1; margin-top: 0.5rem;"><span class="summary-label">Notas</span><span class="summary-value">${escapeHtml(data.clinicalNotes)}</span></li>` : ''}
         `;
 
         // 2. Render Image Quality
@@ -743,8 +650,8 @@ document.addEventListener('DOMContentLoaded', () => {
             redFlagsList.innerHTML = '';
         }
 
-        // 5. Run Protocol Engine
-        const protocolMatches = findMatchingProtocols(data);
+        // 5. Run Protocol Engine (use precomputed if available from runAnalysis)
+        const protocolMatches = precomputedProtocolMatches || findMatchingProtocols(data);
         currentAnalysisData.protocolMatches = protocolMatches;
         const bestMatch = protocolMatches[0] || null;
 
@@ -883,10 +790,18 @@ ${protocolBlock}
             metadata: {
                 timestamp: new Date().toISOString(),
                 exportType: "SIC_JSON_PAYLOAD",
-                consentVerfied: true
+                consentVerified: true
             },
             clinicalData: currentAnalysisData.formData,
-            triageResult: currentAnalysisData.analysis
+            triageResult: currentAnalysisData.analysis,
+            protocolMatches: (currentAnalysisData.protocolMatches || []).map(p => ({
+                id: p.id,
+                diagnosis_short: p.diagnosis_short,
+                triage_seed: p.triage_seed,
+                source: p.source,
+                score: p._score,
+                matchReason: p._matchReason
+            }))
         };
 
         const jsonString = JSON.stringify(exportData, null, 2);

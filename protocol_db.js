@@ -5,6 +5,8 @@
 // PARTE 1 de 2 (registros 1–15)
 // ==========================================================
 
+const PROTOCOL_DB_VERSION = "TD2023-v1.0";
+
 const PROTOCOL_DB = [
     {
         id: 1,

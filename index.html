@@ -41,6 +41,12 @@
             </div>
         </section>
 
+        <!-- Session History Panel (M1) -->
+        <details id="session-history-panel" class="session-history hidden">
+            <summary>📋 Historial de sesión (<span id="history-count">0</span> casos)</summary>
+            <ul id="session-history-list" class="history-list"></ul>
+        </details>
+
         <div class="split-layout">
             <!-- Left Column: Input Form -->
             <section class="card input-section">
@@ -100,13 +106,13 @@
                         </div>
 
                         <div class="field">
-                            <label for="age">Edad del paciente</label>
-                            <input type="number" id="age" min="0" max="120" placeholder="Años">
+                            <label for="age">Edad del paciente <span class="required-mark">*</span></label>
+                            <input type="number" id="age" min="0" max="120" placeholder="Años" class="required-field">
                         </div>
 
                         <div class="field">
-                            <label for="duration">Tiempo de evolución</label>
-                            <select id="duration">
+                            <label for="duration">Tiempo de evolución <span class="required-mark">*</span></label>
+                            <select id="duration" class="required-field">
                                 <option value="" disabled selected>Seleccione duración</option>
                                 <option value="< 1 week">&lt; 1 semana</option>
                                 <option value="1–4 weeks">1–4 semanas</option>
@@ -116,8 +122,8 @@
                         </div>
 
                         <div class="field">
-                            <label for="symptoms">Síntomas</label>
-                            <select id="symptoms">
+                            <label for="symptoms">Síntomas <span class="required-mark">*</span></label>
+                            <select id="symptoms" class="required-field">
                                 <option value="" disabled selected>Seleccione síntoma</option>
                                 <option value="pruritus">Prurito (Picazón)</option>
                                 <option value="pain">Dolor</option>
@@ -137,8 +143,8 @@
                         </div>
 
                         <div class="field">
-                            <label for="location">Ubicación</label>
-                            <select id="location">
+                            <label for="location">Ubicación <span class="required-mark">*</span></label>
+                            <select id="location" class="required-field">
                                 <option value="" disabled selected>Seleccione ubicación</option>
                                 <option value="face">Cara</option>
                                 <option value="scalp">Cuero cabelludo</option>
@@ -150,8 +156,8 @@
                         </div>
 
                         <div class="field">
-                            <label for="morphology">Morfología (aproximada)</label>
-                            <select id="morphology">
+                            <label for="morphology">Morfología (aproximada) <span class="required-mark">*</span></label>
+                            <select id="morphology" class="required-field">
                                 <option value="" disabled selected>Seleccione morfología</option>
                                 <option value="macule/patch">Mácula / Mancha</option>
                                 <option value="papule/plaque">Pápula / Placa</option>
@@ -252,7 +258,11 @@
                 </div>
 
                 <div class="results-content hidden" id="results-content">
-                    <h2 class="results-title">Resultados del Análisis</h2>
+                    <div class="results-title-row">
+                        <h2 class="results-title">Resultados del Análisis</h2>
+                        <button id="new-case-btn" class="secondary-button outline small-btn hidden">🔄 Nuevo
+                            caso</button>
+                    </div>
 
                     <div id="case-metadata" class="case-metadata"
                         style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color);">
@@ -383,12 +393,14 @@
 
     <footer class="app-footer">
         <div class="container">
-            <p>Prototipo de triaje dermatológico asistido por IA en atención primaria. Solo para fines de demostración.
-            </p>
+            <p>Prototipo de triaje dermatológico para teledermatología APS. Solo para fines de demostración.</p>
+            <p class="footer-db-version">Base clínica: <span id="db-version">TD2023-v1.0</span> · Motor:
+                protocol_engine.js</p>
         </div>
     </footer>
 
     <script src="protocol_db.js"></script>
+    <script src="protocol_engine.js"></script>
     <script src="app.js"></script>
 </body>
 

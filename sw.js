@@ -1,9 +1,11 @@
-const CACHE_NAME = 'derm-triage-v3';
+const CACHE_NAME = 'derm-triage-v5';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './style.css',
     './app.js',
+    './protocol_db.js',
+    './protocol_engine.js',
     './manifest.json',
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
 ];
