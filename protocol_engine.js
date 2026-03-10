@@ -241,6 +241,53 @@ function normalizeDiagnosisRecord(record) {
     };
 }
 
+/**
+ * detectSyndrome(features)
+ * Detecta el síndrome dermatológico más probable usando las features clínicas.
+ * Esta función será usada en una futura capa de análisis semiológico.
+ */
+function detectSyndrome(features) {
+    if (!features || !Array.isArray(features) || typeof DIAGNOSIS_DATASET === 'undefined') {
+        return { syndrome: null, score: 0 };
+    }
+
+    const normalizedInput = normalizeFeatureList(features);
+    if (normalizedInput.length === 0) return { syndrome: null, score: 0 };
+
+    const syndromeScores = {};
+
+    DIAGNOSIS_DATASET.forEach(diag => {
+        const normalizedDiag = normalizeDiagnosisRecord(diag);
+        let matchCount = 0;
+
+        normalizedInput.forEach(feature => {
+            if (normalizedDiag.key_features.includes(feature)) {
+                matchCount++;
+            }
+        });
+
+        if (matchCount > 0) {
+            const currentScore = syndromeScores[diag.syndrome] || 0;
+            syndromeScores[diag.syndrome] = currentScore + matchCount;
+        }
+    });
+
+    let bestSyndrome = null;
+    let maxScore = 0;
+
+    for (const syndrome in syndromeScores) {
+        if (syndromeScores[syndrome] > maxScore) {
+            maxScore = syndromeScores[syndrome];
+            bestSyndrome = syndrome;
+        }
+    }
+
+    return {
+        syndrome: bestSyndrome,
+        score: maxScore
+    };
+}
+
 // =========================================================
 // TEXT FORMATTING UTILITIES
 // =========================================================
