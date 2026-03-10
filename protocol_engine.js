@@ -406,6 +406,48 @@ function runSemiologicAnalysis(features) {
     return result;
 }
 
+/**
+ * UI_FEATURE_MAP
+ * Mapeo entre vocabulario del formulario UI y taxonomía clínica canónica.
+ * Conecta el vocabulario del formulario con la taxonomía clínica.
+ */
+const UI_FEATURE_MAP = {
+    "macule/patch": ["macula", "placa"],
+    "macule": ["macula"],
+    "patch": ["placa"],
+    "lower_limbs": ["extremidades"],
+    "upper_limbs": ["extremidades"],
+    "asymptomatic": [],
+    "itch": ["prurito"],
+    "pain": ["dolor"],
+    "burning": ["ardor"],
+    "scalp": ["cuero_cabelludo"],
+    "face": ["cara"],
+    "trunk": ["tronco"],
+    "genital_area": ["genital"]
+};
+
+/**
+ * mapUIFeatures(features)
+ * Traduce y expande las características según el mapeo definido.
+ */
+function mapUIFeatures(features) {
+    if (!features || !Array.isArray(features)) return [];
+
+    const mapped = [];
+    features.forEach(feat => {
+        if (UI_FEATURE_MAP[feat] !== undefined) {
+            UI_FEATURE_MAP[feat].forEach(m => {
+                if (m) mapped.push(m);
+            });
+        } else if (feat) {
+            mapped.push(feat);
+        }
+    });
+
+    return mapped;
+}
+
 // =========================================================
 // TEXT FORMATTING UTILITIES
 // =========================================================

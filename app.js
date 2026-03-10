@@ -385,7 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
             data.specialContext
         ];
         const semiologicResult = typeof runSemiologicAnalysis !== 'undefined'
-            ? runSemiologicAnalysis(semiologicFeatures)
+            ? runSemiologicAnalysis(typeof mapUIFeatures !== 'undefined' ? mapUIFeatures(semiologicFeatures) : semiologicFeatures)
             : null;
 
         if (semiologicResult) {
