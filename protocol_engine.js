@@ -412,19 +412,47 @@ function runSemiologicAnalysis(features) {
  * Conecta el vocabulario del formulario con la taxonomía clínica.
  */
 const UI_FEATURE_MAP = {
+    // Morfología
     "macule/patch": ["macula", "placa"],
     "macule": ["macula"],
     "patch": ["placa"],
-    "lower_limbs": ["extremidades"],
-    "upper_limbs": ["extremidades"],
-    "asymptomatic": [],
-    "itch": ["prurito"],
-    "pain": ["dolor"],
-    "burning": ["ardor"],
-    "scalp": ["cuero_cabelludo"],
+    "papule/plaque": ["papula", "placa"],
+    "vesicle/blister": ["vesicula", "ampolla"],
+    "crusted lesion": ["costra"],
+    "pigmented lesion": ["pigmentado"],
+    "scaling lesion": ["escama"],
+    "ulcerated lesion": ["ulcera"],
+
+    // Ubicación
     "face": ["cara"],
     "trunk": ["tronco"],
-    "genital_area": ["genital"]
+    "scalp": ["cuero_cabelludo"],
+    "genital area": ["genital"],
+    "genital_area": ["genital"],
+    "upper limbs": ["extremidades"],
+    "upper_limbs": ["extremidades"],
+    "lower limbs": ["extremidades"],
+    "lower_limbs": ["extremidades"],
+    "limb": ["extremidades"],
+    "limbs": ["extremidades"],
+
+    // Síntomas
+    "pruritus": ["prurito"],
+    "itch": ["prurito"],
+    "itching": ["prurito"],
+    "pain": ["dolor"],
+    "painful": ["dolor"],
+    "burning": ["ardor"],
+    "asymptomatic": [],
+    "non_pruritic": [],
+
+    // Distribución
+    "localized": ["localizado"],
+    "bilateral": ["bilateral", "simetrico"],
+    "dermatomal": ["dermatomal"],
+    "flexural": ["flexor"],
+    "extensor": ["extensor"],
+    "photoexposed": ["fotoexpuesto"]
 };
 
 /**
