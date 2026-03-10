@@ -341,6 +341,71 @@ function evaluateRedFlags(features) {
     return activatedFlags;
 }
 
+/**
+ * runSemiologicAnalysis(features)
+ * Orquestador del análisis semiológico: normalización, detección de síndrome,
+ * red flags y ranking diagnóstico del dataset APS.
+ * Esta función será la base del futuro motor clínico semiológico.
+ */
+function runSemiologicAnalysis(features) {
+    const result = {
+        features: [],
+        syndrome: { syndrome: null, score: 0 },
+        red_flags: [],
+        diagnosis_ranking: []
+    };
+
+    if (!features || !Array.isArray(features)) return result;
+
+    // 1. Normalización
+    result.features = normalizeFeatureList(features);
+    if (result.features.length === 0) return result;
+
+    // 2. Detección de Síndrome
+    if (typeof detectSyndrome !== 'undefined') {
+        result.syndrome = detectSyndrome(result.features);
+    }
+
+    // 3. Evaluación de Red Flags
+    if (typeof evaluateRedFlags !== 'undefined') {
+        result.red_flags = evaluateRedFlags(result.features);
+    }
+
+    // 4. Ranking Diagnóstico (solo si hay síndrome detectado)
+    if (result.syndrome.syndrome && typeof DIAGNOSIS_DATASET !== 'undefined') {
+        const ranking = [];
+
+        DIAGNOSIS_DATASET.forEach(diag => {
+            // Solo considerar diagnósticos del mismo síndrome detectado
+            if (diag.syndrome === result.syndrome.syndrome) {
+                const normDiag = typeof normalizeDiagnosisRecord !== 'undefined'
+                    ? normalizeDiagnosisRecord(diag)
+                    : diag;
+
+                const matchedFeatures = result.features.filter(f =>
+                    normDiag.key_features.includes(f)
+                );
+
+                if (matchedFeatures.length > 0) {
+                    ranking.push({
+                        id: diag.id,
+                        syndrome: diag.syndrome,
+                        triage_seed: diag.triage_seed,
+                        score: matchedFeatures.length,
+                        matched_features: matchedFeatures
+                    });
+                }
+            }
+        });
+
+        // Ordenar de mayor a menor score
+        ranking.sort((a, b) => b.score - a.score);
+        result.diagnosis_ranking = ranking;
+    }
+
+    return result;
+}
+
 // =========================================================
 // TEXT FORMATTING UTILITIES
 // =========================================================
