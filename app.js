@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //    // It would return bounding boxes, lesion categories with confidence scores, and image quality metrics.
     // }
 
-    function saveToDataset(data, analysis, protocolMatches, meta) {
+    function saveToDataset(data, analysis, protocolMatches, meta, semiologicResult = null) {
         try {
             const dataset = JSON.parse(localStorage.getItem('derm-triage-dataset') || '[]');
             dataset.push({
@@ -362,7 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 })),
                 bestProtocol: protocolMatches && protocolMatches[0]
                     ? { id: protocolMatches[0].id, diagnosis_short: protocolMatches[0].diagnosis_short, triage_seed: protocolMatches[0].triage_seed }
-                    : null
+                    : null,
+                semiologicPreview: semiologicResult // FASE PREVIEW
             });
             localStorage.setItem('derm-triage-dataset', JSON.stringify(dataset));
         } catch (e) {
@@ -373,13 +374,31 @@ document.addEventListener('DOMContentLoaded', () => {
     function runAnalysis(data) {
         const analysis = evaluateTriage(data);
         const protocolMatches = findMatchingProtocols(data);
+
+        // --- SEMIOLOGIC ANALYSIS PREVIEW (Fase Preview) ---
+        // Esta integración es una fase de prueba interna previa a la futura integración visual.
+        const semiologicFeatures = [
+            data.morphology,
+            data.location,
+            data.symptoms,
+            data.distribution,
+            data.specialContext
+        ];
+        const semiologicResult = typeof runSemiologicAnalysis !== 'undefined'
+            ? runSemiologicAnalysis(semiologicFeatures)
+            : null;
+
+        if (semiologicResult) {
+            console.log("DermatoAPS [Semiologic Preview]:", semiologicResult);
+        }
+
         const now = new Date();
         const meta = {
             caseId: 'CAS-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
             dateStr: now.toLocaleDateString(),
             timeStr: now.toLocaleTimeString()
         };
-        saveToDataset(data, analysis, protocolMatches, meta);
+        saveToDataset(data, analysis, protocolMatches, meta, semiologicResult);
         displayResults(data, analysis, protocolMatches, meta);
         renderSessionHistory(); // M1
     }
