@@ -450,3 +450,104 @@ const PROTOCOL_DB = [
         source: "Guía Clínica MINSAL"
     }
 ];
+
+const DIAGNOSIS_DATASET = [
+    {
+        "id": "acne",
+        "aliases": ["acne_vulgar"],
+        "syndrome": "anexial",
+        "triage_seed": "verde",
+        "key_features": ["comedon", "papula", "pustula", "cara", "tronco", "cronico"]
+    },
+    {
+        "id": "rosacea",
+        "aliases": ["acne_rosacea"],
+        "syndrome": "anexial",
+        "triage_seed": "verde",
+        "key_features": ["eritema", "telangiectasia", "papula", "pustula", "cara"]
+    },
+    {
+        "id": "dermatitis_atopica",
+        "aliases": ["eccema_atopico"],
+        "syndrome": "eritemato_descamativo",
+        "triage_seed": "verde",
+        "key_features": ["prurito", "xerosis", "placa", "flexor", "simetrico", "cronico"]
+    },
+    {
+        "id": "dermatitis_seborreica",
+        "aliases": ["eccema_seborreico", "caspa"],
+        "syndrome": "eritemato_descamativo",
+        "triage_seed": "verde",
+        "key_features": ["eritema", "escama", "seborreico", "cara", "cuero_cabelludo", "recurrente"]
+    },
+    {
+        "id": "psoriasis",
+        "aliases": ["psoriasis_vulgar"],
+        "syndrome": "eritemato_descamativo",
+        "triage_seed": "amarillo",
+        "key_features": ["placa", "eritema", "escama", "extensor", "simetrico", "cronico"]
+    },
+    {
+        "id": "dermatitis_de_contacto",
+        "aliases": ["eccema_de_contacto"],
+        "syndrome": "vesiculo_ampollar",
+        "triage_seed": "verde",
+        "key_features": ["eritema", "vesicula", "edema", "prurito", "localizado"]
+    },
+    {
+        "id": "escabiosis",
+        "aliases": ["sarna", "acariasis"],
+        "syndrome": "papular_pruriginoso",
+        "triage_seed": "verde",
+        "key_features": ["prurito", "nocturno", "papula", "interdigital", "genital"]
+    },
+    {
+        "id": "urticaria",
+        "aliases": ["ronchas", "sindrome_urticariano"],
+        "syndrome": "urticarial",
+        "triage_seed": "amarillo",
+        "key_features": ["habon", "prurito", "evanescente", "transitorio"]
+    },
+    {
+        "id": "herpes_zoster",
+        "aliases": ["culebrilla"],
+        "syndrome": "vesiculo_ampollar",
+        "triage_seed": "amarillo",
+        "key_features": ["vesicula", "agrupado", "dermatomal", "unilateral", "dolor", "ardor"]
+    },
+    {
+        "id": "liquen_plano",
+        "aliases": [],
+        "syndrome": "papular_pruriginoso",
+        "triage_seed": "amarillo",
+        "key_features": ["papula", "poligonal", "prurito", "violaceo", "muneca", "tobillo"]
+    },
+    {
+        "id": "carcinoma_basocelular",
+        "aliases": ["epitelioma_basocelular"],
+        "syndrome": "tumoral",
+        "triage_seed": "amarillo",
+        "key_features": ["papula", "nodulo", "telangiectasia", "ulceracion", "cara"]
+    },
+    {
+        "id": "melanoma",
+        "aliases": ["melanoma_maligno"],
+        "syndrome": "tumoral",
+        "triage_seed": "naranja",
+        "key_features": ["macula", "pigmentado", "asimetrico", "bordes_irregulares", "cambio"]
+    },
+    {
+        "id": "eritema_nodoso",
+        "aliases": [],
+        "syndrome": "nodular",
+        "triage_seed": "amarillo",
+        "key_features": ["nodulo", "dolor", "pretibial", "eritema"]
+    },
+    {
+        "id": "pitiriasis_versicolor",
+        "aliases": ["tinea_versicolor"],
+        "syndrome": "pigmentado",
+        "triage_seed": "verde",
+        "key_features": ["macula", "hipopigmentado", "hiperpigmentado", "escama", "tronco"]
+    }
+];

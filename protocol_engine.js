@@ -195,6 +195,99 @@ function buildMatchReason(protocol, data) {
     return reasons.slice(0, 2).join(', ');
 }
 
+/**
+ * normalizeClinicalInput(input)
+ * Devuelve una copia normalizada del input clínico usando la taxonomía.
+ */
+function normalizeClinicalInput(input) {
+    if (!input || typeof DermTaxonomy === 'undefined') return input;
+
+    // Crear una copia para evitar mutaciones accidentales
+    const normalized = { ...input };
+
+    if (normalized.morphology) normalized.morphology = DermTaxonomy.normalizeTerm(normalized.morphology);
+    if (normalized.location) normalized.location = DermTaxonomy.normalizeTerm(normalized.location);
+    if (normalized.symptoms) normalized.symptoms = DermTaxonomy.normalizeTerm(normalized.symptoms);
+    if (normalized.distribution) normalized.distribution = DermTaxonomy.normalizeTerm(normalized.distribution);
+
+    return normalized;
+}
+
+/**
+ * normalizeFeatureList(list)
+ * Normaliza una lista de características clínicas (features).
+ * Preparación para motor semiológico futuro.
+ */
+function normalizeFeatureList(list) {
+    if (!list || !Array.isArray(list) || typeof DermTaxonomy === 'undefined') return list || [];
+    return list
+        .map(item => DermTaxonomy.normalizeTerm(item))
+        .filter(Boolean);
+}
+
+/**
+ * normalizeDiagnosisRecord(record)
+ * Normaliza un registro de diagnóstico del dataset APS.
+ * Preparación para motor semiológico futuro.
+ */
+function normalizeDiagnosisRecord(record) {
+    if (!record || typeof DermTaxonomy === 'undefined') return record;
+
+    return {
+        ...record,
+        id: DermTaxonomy.normalizeTerm(record.id),
+        aliases: normalizeFeatureList(record.aliases),
+        key_features: normalizeFeatureList(record.key_features)
+    };
+}
+
+/**
+ * detectSyndrome(features)
+ * Detecta el síndrome dermatológico más probable usando las features clínicas.
+ * Esta función será usada en una futura capa de análisis semiológico.
+ */
+function detectSyndrome(features) {
+    if (!features || !Array.isArray(features) || typeof DIAGNOSIS_DATASET === 'undefined') {
+        return { syndrome: null, score: 0 };
+    }
+
+    const normalizedInput = normalizeFeatureList(features);
+    if (normalizedInput.length === 0) return { syndrome: null, score: 0 };
+
+    const syndromeScores = {};
+
+    DIAGNOSIS_DATASET.forEach(diag => {
+        const normalizedDiag = normalizeDiagnosisRecord(diag);
+        let matchCount = 0;
+
+        normalizedInput.forEach(feature => {
+            if (normalizedDiag.key_features.includes(feature)) {
+                matchCount++;
+            }
+        });
+
+        if (matchCount > 0) {
+            const currentScore = syndromeScores[diag.syndrome] || 0;
+            syndromeScores[diag.syndrome] = currentScore + matchCount;
+        }
+    });
+
+    let bestSyndrome = null;
+    let maxScore = 0;
+
+    for (const syndrome in syndromeScores) {
+        if (syndromeScores[syndrome] > maxScore) {
+            maxScore = syndromeScores[syndrome];
+            bestSyndrome = syndrome;
+        }
+    }
+
+    return {
+        syndrome: bestSyndrome,
+        score: maxScore
+    };
+}
+
 // =========================================================
 // TEXT FORMATTING UTILITIES
 // =========================================================
