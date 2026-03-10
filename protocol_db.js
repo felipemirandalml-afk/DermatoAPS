@@ -551,3 +551,49 @@ const DIAGNOSIS_DATASET = [
         "key_features": ["macula", "hipopigmentado", "hiperpigmentado", "escama", "tronco"]
     }
 ];
+
+const RED_FLAGS_DATASET = [
+    {
+        "id": "melanoma_sospechoso",
+        "match_all": ["pigmentado", "asimetrico", "bordes_irregulares"],
+        "match_any": ["cambio", "macula"],
+        "triage_override": "naranja",
+        "reason": "lesion pigmentada sospechosa de melanoma"
+    },
+    {
+        "id": "zoster_oftalmico_sospechoso",
+        "match_all": ["vesicula", "dermatomal", "dolor"],
+        "match_any": ["cara", "parpado", "nariz"],
+        "triage_override": "naranja",
+        "reason": "posible herpes zoster con compromiso oftalmico"
+    },
+    {
+        "id": "ampollar_generalizado",
+        "match_all": ["ampolla", "generalizado"],
+        "match_any": ["dolor", "erosion"],
+        "triage_override": "naranja",
+        "reason": "enfermedad ampollar extensa o grave"
+    },
+    {
+        "id": "purpura_o_necrosis",
+        "match_all": [],
+        "match_any": ["purpura", "necrosis", "escara"],
+        "triage_override": "naranja",
+        "reason": "purpura o necrosis cutanea requiere evaluacion urgente"
+    },
+    {
+        "id": "compromiso_mucoso",
+        "match_all": ["mucosa"],
+        "match_any": ["erosion", "ampolla", "dolor"],
+        "triage_override": "naranja",
+        "reason": "compromiso mucoso dermatologico de riesgo"
+    },
+    {
+        "id": "celulitis_extensa_o_dolor_desproporcionado",
+        "match_all": [],
+        "match_any": ["dolor_desproporcionado", "necrosis", "fiebre"],
+        "triage_override": "naranja",
+        "reason": "infeccion cutanea potencialmente grave"
+    }
+];
+

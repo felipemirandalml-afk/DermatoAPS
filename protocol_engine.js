@@ -288,6 +288,59 @@ function detectSyndrome(features) {
     };
 }
 
+/**
+ * normalizeRedFlagRecord(record)
+ * Normaliza un registro de Red Flag.
+ * Base de una futura capa de seguridad clínica.
+ */
+function normalizeRedFlagRecord(record) {
+    if (!record || typeof DermTaxonomy === 'undefined') return record;
+    return {
+        ...record,
+        id: DermTaxonomy.normalizeTerm(record.id),
+        match_all: normalizeFeatureList(record.match_all),
+        match_any: normalizeFeatureList(record.match_any)
+    };
+}
+
+/**
+ * evaluateRedFlags(features)
+ * Evalúa las Red Flags activadas por las features clínicas dadas.
+ * Base de una futura capa de seguridad clínica.
+ */
+function evaluateRedFlags(features) {
+    if (!features || !Array.isArray(features) || typeof RED_FLAGS_DATASET === 'undefined') {
+        return [];
+    }
+
+    const normalizedInput = normalizeFeatureList(features);
+    if (normalizedInput.length === 0) return [];
+
+    const activatedFlags = [];
+
+    RED_FLAGS_DATASET.forEach(flag => {
+        const normFlag = normalizeRedFlagRecord(flag);
+
+        // Match all: todos los elementos de match_all deben estar presentes
+        const hasAll = normFlag.match_all.length === 0 ||
+            normFlag.match_all.every(feat => normalizedInput.includes(feat));
+
+        // Match any: al menos un elemento de match_any debe estar presente
+        const hasAny = normFlag.match_any.length === 0 ||
+            normFlag.match_any.some(feat => normalizedInput.includes(feat));
+
+        if (hasAll && hasAny && (normFlag.match_all.length > 0 || normFlag.match_any.length > 0)) {
+            activatedFlags.push({
+                id: flag.id,
+                triage_override: flag.triage_override,
+                reason: flag.reason
+            });
+        }
+    });
+
+    return activatedFlags;
+}
+
 // =========================================================
 // TEXT FORMATTING UTILITIES
 // =========================================================
