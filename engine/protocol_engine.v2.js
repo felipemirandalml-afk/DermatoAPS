@@ -6,6 +6,7 @@
  */
 
 import { PROTOCOLS_V2 } from '../data/protocols.v2.js';
+import { normalizeClinicalInputV2 } from '../utils/clinical_input_mapper.v2.js';
 
 /**
  * Valida que un protocolo tenga la estructura mínima requerida para el motor v2.
@@ -135,17 +136,9 @@ export function buildProtocolExplanation(protocol, input) {
  * @param {Object} clinicalInput - Datos clínicos capturados.
  */
 export function runProtocolEngineV2(clinicalInput) {
-    // Normalizar entrada con valores por defecto
-    const input = {
-        morphology: [],
-        location: [],
-        symptoms: [],
-        duration: "",
-        redFlags: [],
-        specialContexts: [],
-        abcdeCount: 0,
-        ...clinicalInput
-    };
+    // 1. Normalizar entrada clínica
+    const input = normalizeClinicalInputV2(clinicalInput);
+
 
     // 1. Validar catálogo de protocolos
     const validProtocols = PROTOCOLS_V2.filter(p => validateProtocolV2Shape(p).isValid);

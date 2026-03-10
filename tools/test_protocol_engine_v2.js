@@ -8,69 +8,67 @@ import { runProtocolEngineV2 } from '../engine/protocol_engine.v2.js';
 
 const TEST_CASES = [
     {
-        name: "1. Acné Inflamatorio Leve (Match Perfecto)",
+        name: "1. Acné (Entrada Cruda: papula, facial, crónico)",
         input: {
-            morphology: ["papulas", "pustulas"],
-            location: ["rostro"],
+            morphology: ["papula", "pustula"],
+            location: ["facial"],
             symptoms: ["seborrea"],
-            duration: "cronico"
+            duration: "crónico"
         },
         expectedId: "acne_inflamatorio_leve"
     },
     {
-        name: "2. Dermatitis Atópica (Match por Flexuras)",
+        name: "2. Dermatitis Atópica (Entrada Cruda: eccema, pliegues, picazon)",
         input: {
-            morphology: ["eczema", "placas eritematosas"],
-            location: ["flexuras"],
-            symptoms: ["prurito intenso"],
+            morphology: ["eccema"],
+            location: ["pliegues"],
+            symptoms: ["picazon"],
             duration: "recurrente"
         },
         expectedId: "dermatitis_atopica_leve"
     },
     {
-        name: "3. Pitiriasis Versicolor (Infeccioso)",
+        name: "3. Pitiriasis Versicolor (Entrada Cruda: macula, hipopigmentada)",
         input: {
-            morphology: ["maculas hipopigmentadas"],
+            morphology: ["macula", "hipopigmentada"],
             location: ["tronco"],
-            symptoms: ["leve prurito"],
             duration: "meses"
         },
         expectedId: "pitiriasis_versicolor"
     },
     {
-        name: "4. Queratosis Actínica (Riesgo/Neoplásico)",
+        name: "4. Queratosis Actínica (Entrada Cruda: cara, ardor)",
         input: {
-            morphology: ["lesion eritematosa", "superficie aspera/lija"],
-            location: ["zonas fotoexpuestas", "cara"],
-            symptoms: ["dolor al roce"],
+            morphology: ["lesion eritematosa"],
+            location: ["cara"],
+            symptoms: ["ardor"],
             duration: "cronico"
         },
         expectedId: "queratosis_actinica"
     },
     {
-        name: "5. Psoriasis (Codos/Rodillas)",
+        name: "5. Psoriasis (Entrada Cruda: codo, rodilla, placa, escama)",
         input: {
-            morphology: ["placas eritematosas", "escama blanquecina gruesa"],
-            location: ["codos", "rodillas"],
+            morphology: ["placa", "escama"],
+            location: ["codo", "rodilla"],
             duration: "cronico"
         },
         expectedId: "psoriasis_vulgar_leve"
     },
     {
-        name: "6. Exclusión por Red Flags (Dermatitis Atópica con Eritrodermia)",
+        name: "6. Exclusión por Red Flags (Eritrodermia)",
         input: {
-            morphology: ["eczema"],
-            location: ["flexuras"],
-            redFlags: ["eritrodermia"] // Esto debería excluir el protocolo de dermatitis leve si está mal configurado o mostrar cómo el motor descarta
+            morphology: ["eccema"],
+            location: ["pliegues"],
+            redFlags: ["eritrodermia"]
         },
-        expectedId: null // Esperamos que se excluya o se maneje de forma distinta
+        expectedId: null 
     },
     {
-        name: "7. Sin Match Claro (Morfología desconocida)",
+        name: "7. Sin Match Claro (Entrada Desconocida)",
         input: {
-            morphology: ["pustulas gigantes"],
-            location: ["pies"],
-            symptoms: ["dolor severo"]
+            morphology: ["ronchas"],
+            location: ["pies"]
         },
         expectedId: null
     }
