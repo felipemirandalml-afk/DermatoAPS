@@ -213,6 +213,34 @@ function normalizeClinicalInput(input) {
     return normalized;
 }
 
+/**
+ * normalizeFeatureList(list)
+ * Normaliza una lista de características clínicas (features).
+ * Preparación para motor semiológico futuro.
+ */
+function normalizeFeatureList(list) {
+    if (!list || !Array.isArray(list) || typeof DermTaxonomy === 'undefined') return list || [];
+    return list
+        .map(item => DermTaxonomy.normalizeTerm(item))
+        .filter(Boolean);
+}
+
+/**
+ * normalizeDiagnosisRecord(record)
+ * Normaliza un registro de diagnóstico del dataset APS.
+ * Preparación para motor semiológico futuro.
+ */
+function normalizeDiagnosisRecord(record) {
+    if (!record || typeof DermTaxonomy === 'undefined') return record;
+
+    return {
+        ...record,
+        id: DermTaxonomy.normalizeTerm(record.id),
+        aliases: normalizeFeatureList(record.aliases),
+        key_features: normalizeFeatureList(record.key_features)
+    };
+}
+
 // =========================================================
 // TEXT FORMATTING UTILITIES
 // =========================================================
