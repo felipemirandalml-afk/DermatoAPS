@@ -196,7 +196,7 @@ export const PROTOCOLS_V2 = [
     match: {
       required: {
         morphology: ["lesion eritematosa", "superficie aspera/lija", "escama adherente"],
-        location: ["zonas fotoexpuestas", "cara", "cuero cabelludo (alopecicos)", "dorso manos"]
+        location: ["zonas fotoexpuestas", "rostro", "cuero cabelludo (alopecicos)", "dorso manos"]
       },
 
       supportive: {
