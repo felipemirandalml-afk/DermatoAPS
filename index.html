@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2563eb">
+    <title>Asistente de Triaje Dermatológico para APS</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header class="app-header">
+        <div class="container header-content">
+            <div class="header-titles">
+                <h1>Asistente de Triaje Dermatológico para APS</h1>
+                <p class="subtitle">Herramienta de apoyo a la decisión clínica para triaje en teledermatología</p>
+            </div>
+            <button id="theme-toggle" class="icon-button" aria-label="Cambiar tema oscuro/claro"
+                title="Modo Box Clínico (Dark Mode)">
+                🌙
+            </button>
+        </div>
+        <div class="disclaimer-alert">
+            <span class="icon">⚠️</span>
+            <strong>AVISO LEGAL:</strong> Esta herramienta solo proporciona apoyo a la decisión y no reemplaza el
+            criterio clínico.
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Demo Buttons Section -->
+        <section class="demo-section">
+            <p class="demo-label">Cargar Caso de Prueba:</p>
+            <div class="demo-buttons">
+                <button class="demo-btn" id="demo-eczema" aria-label="Caso ejemplo de Eccema">Probable Eccema
+                    (APS)</button>
+                <button class="demo-btn" id="demo-fungal" aria-label="Caso ejemplo de Infección Fúngica">Infección
+                    Fúngica (TeleDerm)</button>
+                <button class="demo-btn" id="demo-melanoma" aria-label="Caso ejemplo de Sospecha Melanoma">Lesión
+                    Sospechosa (Alarma Roja)</button>
+            </div>
+        </section>
+
+        <!-- Session History Panel (M1) -->
+        <details id="session-history-panel" class="session-history hidden">
+            <summary>📋 Historial de sesión (<span id="history-count">0</span> casos)</summary>
+            <ul id="session-history-list" class="history-list"></ul>
+        </details>
+
+        <div class="split-layout">
+            <!-- Left Column: Input Form -->
+            <section class="card input-section">
+
+                <!-- SECTION 1: Image Upload -->
+                <div class="form-group section-block">
+                    <h2>1. Carga de Imágenes</h2>
+                    <p class="section-desc">Se requieren dos fotografías para un análisis óptimo en teledermatología.
+                    </p>
+
+                    <div class="dual-upload-grid">
+                        <!-- Panoramic Image -->
+                        <div class="upload-container">
+                            <label class="upload-label">Foto Panorámica (Contexto)</label>
+                            <div class="file-upload-wrapper" id="drop-zone-panoramic">
+                                <input type="file" id="image-panoramic" accept="image/*" class="file-input">
+                                <div class="upload-content">
+                                    <span class="upload-icon">📸</span>
+                                    <p>Clic o arrastrar</p>
+                                </div>
+                                <img id="preview-panoramic" src="" alt="Vista Panorámica" class="hidden">
+                            </div>
+                            <small class="upload-error hidden" id="error-panoramic">Imagen subóptima (resolución muy
+                                baja)</small>
+                        </div>
+
+                        <!-- Macro Image -->
+                        <div class="upload-container">
+                            <label class="upload-label">Foto de Detalle (Macro)</label>
+                            <div class="file-upload-wrapper" id="drop-zone-macro">
+                                <input type="file" id="image-macro" accept="image/*" class="file-input">
+                                <div class="upload-content">
+                                    <span class="upload-icon">🔍</span>
+                                    <p>Clic o arrastrar cerca de 10cm</p>
+                                </div>
+                                <img id="preview-macro" src="" alt="Vista Macro" class="hidden">
+                            </div>
+                            <small class="upload-error hidden" id="error-macro">Imagen subóptima (resolución muy
+                                baja)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: Clinical Information -->
+                <div class="form-group section-block">
+                    <h2>2. Información Clínica</h2>
+
+                    <div class="input-grid">
+                        <div class="field">
+                            <label for="sex">Sexo del paciente</label>
+                            <select id="sex">
+                                <option value="" disabled selected>Seleccione sexo</option>
+                                <option value="female">Femenino</option>
+                                <option value="male">Masculino</option>
+                                <option value="other">Otro / no especificado</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="age">Edad del paciente <span class="required-mark">*</span></label>
+                            <input type="number" id="age" min="0" max="120" placeholder="Años" class="required-field">
+                        </div>
+
+                        <div class="field">
+                            <label for="duration">Tiempo de evolución <span class="required-mark">*</span></label>
+                            <select id="duration" class="required-field">
+                                <option value="" disabled selected>Seleccione duración</option>
+                                <option value="< 1 week">&lt; 1 semana</option>
+                                <option value="1–4 weeks">1–4 semanas</option>
+                                <option value="1–3 months">1–3 meses</option>
+                                <option value="> 3 months">&gt; 3 meses</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="symptoms">Síntomas <span class="required-mark">*</span></label>
+                            <select id="symptoms" class="required-field">
+                                <option value="" disabled selected>Seleccione síntoma</option>
+                                <option value="pruritus">Prurito (Picazón)</option>
+                                <option value="pain">Dolor</option>
+                                <option value="burning">Ardor</option>
+                                <option value="asymptomatic">Asintomático</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="number-lesions">Número de lesiones</label>
+                            <select id="number-lesions">
+                                <option value="" disabled selected>Seleccione cantidad</option>
+                                <option value="single">Única</option>
+                                <option value="multiple">Múltiples</option>
+                                <option value="generalized">Generalizadas</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="location">Ubicación <span class="required-mark">*</span></label>
+                            <select id="location" class="required-field">
+                                <option value="" disabled selected>Seleccione ubicación</option>
+                                <option value="face">Cara</option>
+                                <option value="scalp">Cuero cabelludo</option>
+                                <option value="trunk">Tronco</option>
+                                <option value="upper limbs">Extremidades Superiores</option>
+                                <option value="lower limbs">Extremidades Inferiores</option>
+                                <option value="genital area">Zona Genital</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="morphology">Morfología (aproximada) <span class="required-mark">*</span></label>
+                            <select id="morphology" class="required-field">
+                                <option value="" disabled selected>Seleccione morfología</option>
+                                <option value="macule/patch">Mácula / Mancha</option>
+                                <option value="papule/plaque">Pápula / Placa</option>
+                                <option value="vesicle/blister">Vesícula / Ampolla</option>
+                                <option value="crusted lesion">Lesión Costrosa</option>
+                                <option value="pigmented lesion">Lesión Pigmentada</option>
+                                <option value="scaling lesion">Lesión Descamativa</option>
+                                <option value="ulcerated lesion">Lesión Ulcerada</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="distribution">Patrón de distribución</label>
+                            <select id="distribution">
+                                <option value="" disabled selected>Seleccione patrón</option>
+                                <option value="localized">Localizado</option>
+                                <option value="bilateral">Bilateral / Simétrico</option>
+                                <option value="dermatomal">Dermatómico</option>
+                                <option value="flexural">Flexural</option>
+                                <option value="extensor">Extensor</option>
+                                <option value="photoexposed">Fotoexpuesto</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="systemic-symptoms">Síntomas sistémicos</label>
+                            <select id="systemic-symptoms">
+                                <option value="none">Ninguno</option>
+                                <option value="fever">Fiebre / Compromiso general</option>
+                                <option value="swelling">Edema significativo</option>
+                            </select>
+                        </div>
+
+                        <div class="field">
+                            <label for="special-context">Contexto clínico especial</label>
+                            <select id="special-context">
+                                <option value="none">Ninguno</option>
+                                <option value="pediatric">Paciente pediátrico</option>
+                                <option value="pregnancy">Embarazo</option>
+                                <option value="immunosuppressed">Inmunosuprimido</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- ABCDE Sub-form (Visible only for pigmented lesions) -->
+                    <div id="abcde-container" class="sub-form hidden">
+                        <h4>Calculadora de Riesgo: Criterios ABCDE</h4>
+                        <p class="muted-text text-sm mb-2">Evalúe los signos de alarma para lesiones
+                            melanocíticas.</p>
+                        <div class="abcde-grid">
+                            <label class="checkbox-label"><input type="checkbox" id="crit-a">
+                                <strong>A</strong>simetría</label>
+                            <label class="checkbox-label"><input type="checkbox" id="crit-b">
+                                <strong>B</strong>ordes irregulares</label>
+                            <label class="checkbox-label"><input type="checkbox" id="crit-c">
+                                <strong>C</strong>olor (varios tonos)</label>
+                            <label class="checkbox-label"><input type="checkbox" id="crit-d">
+                                <strong>D</strong>iámetro (>6 mm)</label>
+                            <label class="checkbox-label"><input type="checkbox" id="crit-e">
+                                <strong>E</strong>volución rápida</label>
+                        </div>
+                    </div>
+
+                    <div class="field" style="margin-top: 1rem; grid-column: 1 / -1;">
+                        <label for="clinical-notes">Observaciones clínicas (opcional)</label>
+                        <textarea id="clinical-notes" rows="3" maxlength="300"
+                            placeholder="Añada notas breves de contexto (máx. 300 caracteres)..."
+                            class="clinical-notes-textarea"></textarea>
+                    </div>
+
+                    <!-- Consentimiento -->
+                    <div class="consent-block"
+                        style="margin-top: 1.5rem; border-top: 1px dashed var(--border-color); padding-top: 1rem;">
+                        <label class="consent-label">
+                            <input type="checkbox" id="patient-consent">
+                            <span><strong>Consentimiento Informado:</strong> El paciente consiente la toma y envío de
+                                imágenes clínicas para evaluación de teledermatología.</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Analysis Button -->
+                <div class="action-section">
+                    <button id="analyze-btn" class="primary-button">
+                        <span class="btn-text">Analizar Lesión</span>
+                        <div class="loader hidden"></div>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Right Column: Results Section -->
+            <section class="card results-section" id="results-panel">
+                <div class="empty-state" id="empty-results">
+                    <div class="empty-icon">🩺</div>
+                    <h3>Esperando Análisis</h3>
+                    <p>Seleccione un caso de prueba o complete el formulario clínico y haga clic en "Analizar Lesión"
+                        para ver las recomendaciones de triaje.</p>
+                </div>
+
+                <div class="results-content hidden" id="results-content">
+                    <div class="results-title-row">
+                        <h2 class="results-title">Resultados del Análisis</h2>
+                        <button id="new-case-btn" class="secondary-button outline small-btn hidden">🔄 Nuevo
+                            caso</button>
+                    </div>
+
+                    <div id="case-metadata" class="case-metadata-container">
+                        <span id="meta-id">ID: -</span>
+                        <span id="meta-date">Fecha: -</span>
+                        <span id="meta-time">Hora: -</span>
+                    </div>
+
+                    <!-- Clinical Summary & Image Quality Card -->
+                    <div class="result-card info-card">
+                        <div class="card-header">
+                            <h3>📋 Resumen Clínico</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul class="summary-list" id="clinical-summary-list">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
+                        <div class="image-quality-block" id="image-quality-block">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Triage Recommendation Card -->
+                    <div class="result-card highlighted-card">
+                        <div class="card-header">
+                            <h3>Sugerencia de Triaje</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="triage-badge" id="triage-badge">
+                                <!-- Injected by JS -->
+                            </div>
+                            <p class="triage-explanation" id="triage-explanation">
+                                <!-- Injected by JS -->
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Red Flags Card -->
+                    <div class="result-card danger-card hidden" id="red-flags-card">
+                        <div class="card-header">
+                            <h3>⚠️ Signos de Alarma Identificados</h3>
+                        </div>
+                        <div class="card-body">
+                            <ul id="red-flags-list" class="alert-list">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Diagnostic Categories Card -->
+                    <div class="result-card">
+                        <div class="card-header">
+                            <h3>Posibles Categorías Diagnósticas</h3>
+                            <span class="muted-text">No son diagnósticos definitivos</span>
+                        </div>
+                        <div class="card-body">
+                            <ul class="diagnosis-list" id="diagnostic-categories">
+                                <!-- Injected by JS -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Primary Care Management Card -->
+                    <div class="result-card success-card hidden" id="management-card">
+                        <div class="card-header">
+                            <h3>Sugerencia de Manejo Inicial en APS</h3>
+                        </div>
+                        <div class="card-body management-content" id="management-content">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Protocol Discrepancy Note -->
+                    <div id="protocol-discrepancy-note" class="discrepancy-note hidden">
+                        <span class="discrepancy-icon">⚖️</span>
+                        <span>Existe discrepancia entre la regla de triaje actual y el protocolo más relacionado; se
+                            recomienda revisión clínica.</span>
+                    </div>
+
+                    <!-- Education Card -->
+                    <div class="result-card edu-card hidden" id="education-card">
+                        <div class="card-header">
+                            <h3>📚 Educación sugerida para el paciente</h3>
+                            <span class="muted-text">Apoyo a la decisión clínica</span>
+                        </div>
+                        <div class="card-body" id="education-content">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Referral Criteria Panel -->
+                    <div class="result-card info-card">
+                        <div class="card-header">
+                            <h3>🔄 Criterios de Derivación y Reevaluación</h3>
+                        </div>
+                        <div class="card-body criteria-content">
+                            <ul>
+                                <li><strong>Derivación prioritaria</strong> si desarrolla ulceración, crecimiento
+                                    rápido, dolor severo o síntomas sistémicos.</li>
+                                <li><strong>Derivar a teledermatología</strong> si no hay mejoría clínica tras el manejo
+                                    inicial en atención primaria.</li>
+                                <li><strong>Reevaluar</strong> en 2–4 semanas si se maneja en APS.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Export Feature -->
+                    <div class="export-section">
+                        <div class="export-group row">
+                            <button id="export-patient-btn" class="secondary-button success outline">
+                                🧑‍⚕️ Copiar Indicaciones para Paciente
+                            </button>
+                        </div>
+                        <div class="export-group row mt-2">
+                            <button id="export-btn" class="secondary-button">
+                                📄 Generar Resumen Clínico (Formato SIC)
+                            </button>
+                            <button id="export-json-btn" class="secondary-button outline">
+                                📦 Exportar Datos (JSON)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="app-footer">
+        <div class="container">
+            <p>Prototipo de triaje dermatológico para teledermatología APS. Solo para fines de demostración.</p>
+            <p class="footer-db-version">Base clínica: <span id="db-version">TD2023-v1.0</span> · Motor:
+                protocol_engine.js</p>
+        </div>
+    </footer>
+
+    </footer>
+
+    <!-- Toast Notifications Container (U1) -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="protocol_db.js"></script>
+    <script src="protocol_engine.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
