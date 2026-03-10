@@ -195,6 +195,24 @@ function buildMatchReason(protocol, data) {
     return reasons.slice(0, 2).join(', ');
 }
 
+/**
+ * normalizeClinicalInput(input)
+ * Devuelve una copia normalizada del input clínico usando la taxonomía.
+ */
+function normalizeClinicalInput(input) {
+    if (!input || typeof DermTaxonomy === 'undefined') return input;
+
+    // Crear una copia para evitar mutaciones accidentales
+    const normalized = { ...input };
+
+    if (normalized.morphology) normalized.morphology = DermTaxonomy.normalizeTerm(normalized.morphology);
+    if (normalized.location) normalized.location = DermTaxonomy.normalizeTerm(normalized.location);
+    if (normalized.symptoms) normalized.symptoms = DermTaxonomy.normalizeTerm(normalized.symptoms);
+    if (normalized.distribution) normalized.distribution = DermTaxonomy.normalizeTerm(normalized.distribution);
+
+    return normalized;
+}
+
 // =========================================================
 // TEXT FORMATTING UTILITIES
 // =========================================================
