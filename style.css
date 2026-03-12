@@ -1212,3 +1212,85 @@ select:focus {
     padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--border-color);
 }
+
+/* --- V2 PREVIEW STYLES --- */
+.v2-preview-card {
+    border-left: 4px solid var(--primary-color) !important;
+    background-color: var(--info-bg) !important;
+    margin-top: 1.5rem;
+}
+
+.badge-v2 {
+    background: var(--primary-color) !important;
+    color: white !important;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    margin-left: 0.5rem;
+}
+
+.v2-preview-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.v2-preview-item {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px dotted var(--border-color);
+}
+
+.v2-preview-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.v2-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.v2-rank {
+    font-size: 0.8rem;
+    opacity: 0.6;
+    font-weight: 600;
+}
+
+.v2-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.v2-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.v2-badge-green { background-color: #dcfce7 !important; color: #166534 !important; }
+.v2-badge-yellow { background-color: #fef9c3 !important; color: #854d0e !important; }
+.v2-badge-red { background-color: #fee2e2 !important; color: #991b1b !important; }
+
+.v2-score {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--muted-text);
+    background: var(--bg-color);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.v2-explanation {
+    font-size: 0.85rem;
+    color: var(--secondary-text);
+    margin: 0;
+    line-height: 1.4;
+}

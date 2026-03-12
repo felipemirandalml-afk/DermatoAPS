@@ -400,6 +400,13 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         saveToDataset(data, analysis, protocolMatches, meta, semiologicResult);
         displayResults(data, analysis, protocolMatches, meta);
+        
+        // --- MOTOR V2 PREVIEW ---
+        if (typeof runPreviewAnalysisV2 === 'function') {
+            const v2Results = runPreviewAnalysisV2(data);
+            renderV2Preview(v2Results);
+        }
+
         renderSessionHistory(); // M1
     }
 
@@ -758,6 +765,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('education-card').classList.add('hidden');
         }
 
+        // --- V2 PREVIEW UI RESET ---
+        document.getElementById('v2-preview-list').innerHTML = '<li class="muted-text">Ejecutando motor en paralelo...</li>';
+
         // Scroll gracefully to results on mobile
         if (window.innerWidth <= 768) {
             document.getElementById('results-panel').scrollIntoView({ behavior: 'smooth' });
@@ -914,4 +924,32 @@ ${protocolBlock}
             showToast("No se pudo copiar el texto al portapapeles.", "error");
         });
     });
+
+    /**
+     * renderV2Preview(results)
+     * Renderiza los resultados del motor clínico v2 en el panel de preview.
+     */
+    function renderV2Preview(results) {
+        const list = document.getElementById('v2-preview-list');
+        if (!list) return;
+
+        if (!results || results.length === 0) {
+            list.innerHTML = '<li class="muted-text">No se encontraron coincidencias exactas en v2.</li>';
+            return;
+        }
+
+        const triageClasses = { GREEN: 'v2-badge-green', YELLOW: 'v2-badge-yellow', RED: 'v2-badge-red' };
+
+        list.innerHTML = results.slice(0, 3).map((res, idx) => `
+            <li class="v2-preview-item">
+                <div class="v2-item-header">
+                    <span class="v2-rank">#${idx + 1}</span>
+                    <span class="v2-label">${res.label}</span>
+                    <span class="v2-badge ${triageClasses[res.triage] || ''}">${res.triage}</span>
+                    <span class="v2-score">score ${res.supportiveScore}</span>
+                </div>
+                <p class="v2-explanation">${res.explanation}</p>
+            </li>
+        `).join('');
+    }
 });
