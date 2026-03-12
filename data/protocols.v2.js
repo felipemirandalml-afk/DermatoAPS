@@ -14,17 +14,20 @@ export const PROTOCOLS_V2 = [
     triage: {
       default: "GREEN",
       escalationRules: [
-        { condition: "pustulas abundantes o nodulos", target: "YELLOW" }
+        { condition: "compromiso ocular", target: "YELLOW" },
+        { condition: "riesgo_ocular_detectado", target: "YELLOW" }
       ]
     },
 
     match: {
       required: {
-        morphology: ["comedones", "papulas", "pustulas"],
-        location: ["rostro"]
+        primaryMorphology: ["papula", "pustula"],
+        surfaceFeatures: ["pustulosa"],
+        distribution: ["rostro"]
       },
 
       supportive: {
+        morphology: ["comedones"],
         symptoms: ["seborrea"],
         duration: ["cronico"]
       },
@@ -80,11 +83,13 @@ export const PROTOCOLS_V2 = [
 
     match: {
       required: {
-        morphology: ["eczema", "placas eritematosas", "xerosis"],
-        location: ["flexuras", "rostro (en lactantes)", "dorso manos"]
+        primaryMorphology: ["placa"],
+        surfaceFeatures: ["descamativa"],
+        distribution: ["flexural", "rostro", "extensora"]
       },
 
       supportive: {
+        morphology: ["xerosis"],
         symptoms: ["prurito intenso"],
         duration: ["recurrente", "cronico"]
       },
@@ -139,8 +144,9 @@ export const PROTOCOLS_V2 = [
 
     match: {
       required: {
-        morphology: ["maculas hipopigmentadas", "maculas hiperpigmentadas", "fina descamacion"],
-        location: ["tronco", "hombros", "cuello"]
+        primaryMorphology: ["macula"],
+        surfaceFeatures: ["descamativa"],
+        distribution: ["tronco"]
       },
 
       supportive: {
@@ -195,8 +201,9 @@ export const PROTOCOLS_V2 = [
 
     match: {
       required: {
-        morphology: ["lesion eritematosa", "superficie aspera/lija", "escama adherente"],
-        location: ["zonas fotoexpuestas", "rostro", "cuero cabelludo (alopecicos)", "dorso manos"]
+        primaryMorphology: ["placa", "papula"],
+        surfaceFeatures: ["queratosica", "escamosa"],
+        distribution: ["fotoexpuesta"]
       },
 
       supportive: {
@@ -252,8 +259,9 @@ export const PROTOCOLS_V2 = [
 
     match: {
       required: {
-        morphology: ["placas eritematosas", "escama blanquecina gruesa"],
-        location: ["codos", "rodillas", "zona lumbosacra", "cuero cabelludo"]
+        primaryMorphology: ["placa"],
+        surfaceFeatures: ["escamosa"],
+        distribution: ["extensora", "tronco"]
       },
 
       supportive: {
@@ -296,5 +304,96 @@ export const PROTOCOLS_V2 = [
       version: "TD2023-v1.0",
       reviewedAt: "2026-03-10"
     }
+  },
+  {
+    id: "rosacea_eritemato_telangiectasica",
+    label: "Rosácea eritemato-telangiectásica",
+    category: "inflammatory",
+    triage: {
+      default: "GREEN",
+      escalationRules: [
+        { condition: "compromiso ocular", target: "YELLOW" }
+      ]
+    },
+    match: {
+      required: {
+        primaryMorphology: ["placa"],
+        surfaceFeatures: ["exudativa"], // Fallback a eritema persistente mapeado
+        distribution: ["rostro"]
+      },
+      supportive: {
+        symptoms: ["ardor", "flashings"],
+        duration: ["cronico"]
+      },
+      exclusions: ["comedones"]
+    },
+    apsManagement: {
+      generalMeasures: ["Evitar gatillantes (calor, alcohol, picantes)", "Fotoprotección estricta"],
+      drugs: ["Metronidazol 0.75% gel: noche por 3 meses"],
+      followUp: "Control en 3 meses"
+    },
+    patientEducation: ["Explicar cronicidad y control de factores externos."],
+    referral: { telederm: true, specialist: false, urgency: false },
+    evidence: { source: "DermatoAPS", version: "v2", reviewedAt: "2026-03-11" }
+  },
+  {
+    id: "escabiosis_adulto",
+    label: "Escabiosis (Sarna)",
+    category: "infectious",
+    triage: {
+      default: "YELLOW",
+      escalationRules: [
+        { condition: "posible_brote_familiar", target: "YELLOW" }
+      ]
+    },
+    match: {
+      required: {
+        primaryMorphology: ["papula"],
+        surfaceFeatures: ["costrosa"],
+        distribution: ["flexural", "generalizada"]
+      },
+      supportive: {
+        symptoms: ["prurito intenso", "prurito nocturno"],
+        duration: ["semanas"]
+      },
+      exclusions: []
+    },
+    apsManagement: {
+      generalMeasures: ["Tratamiento familiar simultáneo", "Lavado de ropa a 60°C"],
+      drugs: ["Permetrina 5% crema: aplicar de cuello a pies por 8-12h, repetir en 7 días"],
+      followUp: "Control en 14 días"
+    },
+    patientEducation: ["El prurito puede persistir semanas tras el éxito del tratamiento."],
+    referral: { telederm: false, specialist: false, urgency: false },
+    evidence: { source: "DermatoAPS", version: "v2", reviewedAt: "2026-03-11" }
+  },
+  {
+    id: "tinea_corporis",
+    label: "Tiña corporis",
+    category: "infectious",
+    triage: {
+      default: "GREEN",
+      escalationRules: []
+    },
+    match: {
+      required: {
+        primaryMorphology: ["placa"],
+        surfaceFeatures: ["descamativa"],
+        distribution: ["tronco", "extensora"]
+      },
+      supportive: {
+        symptoms: ["prurito"],
+        duration: ["semanas"]
+      },
+      exclusions: []
+    },
+    apsManagement: {
+      generalMeasures: ["No compartir toallas", "Mantener piel seca"],
+      drugs: ["Terbinafina 1% crema: 2 veces al día por 2-3 semanas"],
+      followUp: "Control en 1 mes si no mejora"
+    },
+    patientEducation: ["Completar tratamiento incluso si las lesiones desaparecen antes."],
+    referral: { telederm: true, specialist: false, urgency: false },
+    evidence: { source: "DermatoAPS", version: "v2", reviewedAt: "2026-03-11" }
   }
 ];

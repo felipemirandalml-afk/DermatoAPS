@@ -1215,14 +1215,14 @@ select:focus {
 
 /* --- V2 PREVIEW STYLES --- */
 .v2-preview-card {
-    border-left: 4px solid var(--primary-color) !important;
-    background-color: var(--info-bg) !important;
+    border-left: 4px solid var(--primary-color);
+    background-color: var(--info-bg);
     margin-top: 1.5rem;
 }
 
 .badge-v2 {
-    background: var(--primary-color) !important;
-    color: white !important;
+    background-color: var(--primary-color);
+    color: white;
     font-size: 0.65rem;
     padding: 2px 6px;
     border-radius: 4px;
@@ -1266,22 +1266,10 @@ select:focus {
     font-size: 0.95rem;
 }
 
-.v2-badge {
-    font-size: 0.7rem;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.v2-badge-green { background-color: #dcfce7 !important; color: #166534 !important; }
-.v2-badge-yellow { background-color: #fef9c3 !important; color: #854d0e !important; }
-.v2-badge-red { background-color: #fee2e2 !important; color: #991b1b !important; }
-
 .v2-score {
     margin-left: auto;
     font-size: 0.75rem;
-    color: var(--muted-text);
+    color: var(--text-secondary);
     background: var(--bg-color);
     padding: 2px 6px;
     border-radius: 4px;
@@ -1290,7 +1278,35 @@ select:focus {
 
 .v2-explanation {
     font-size: 0.85rem;
-    color: var(--secondary-text);
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.4;
-}
+}
+
+.v2-anatomy-trace {
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    background: rgba(37, 99, 234, 0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-weight: 500;
+}
+
+.v2-anatomy-trace::before {
+    content: "📍";
+    font-size: 0.75rem;
+}
+
+.v2-match-type {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--success-text);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+}

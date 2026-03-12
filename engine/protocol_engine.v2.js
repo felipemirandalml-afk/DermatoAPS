@@ -1,12 +1,13 @@
 /**
  * PROTOCOL ENGINE V2 - Motor de Decisión Clínica Estructurado
  * Este motor procesa protocolos v2 y genera sugerencias basadas en lógica semiológica.
- * Versión: 2.0.0
- * Fecha: 2026-03-10
+ * Versión: 2.1.0
+ * Fecha: 2026-03-11
  */
 
 import { PROTOCOLS_V2 } from '../data/protocols.v2.js';
 import { normalizeClinicalInputV2 } from '../utils/clinical_input_mapper.v2.js';
+import { getAnatomyAncestors } from '../data/anatomy_map.v2.js';
 
 /**
  * Valida que un protocolo tenga la estructura mínima requerida para el motor v2.
@@ -46,19 +47,45 @@ export function validateProtocolsV2(protocols) {
 
 /**
  * Evalúa si la entrada clínica cumple con los criterios mínimos obligatorios (REQUIRED).
+ * Prioriza la nueva ontología (primaryMorphology, surfaceFeatures, distribution) si está presente.
  * @param {Object} protocol - Protocolo v2.
- * @param {Object} input - Entrada clínica del usuario.
+ * @param {Object} input - Entrada clínica del usuario (ya normalizada).
  */
 export function matchesRequiredCriteria(protocol, input) {
     const req = protocol.match.required;
     
-    // Validar morfología (debe coincidir al menos una si el protocolo la exige)
-    const hasMorphology = req.morphology.length === 0 || 
+    // Verificamos si el protocolo ya usa la nueva ontología extendida
+    const hasExtendedOntology = req.primaryMorphology || req.surfaceFeatures || req.distribution;
+
+    if (hasExtendedOntology) {
+        // 1. Validación de Morfología Primaria
+        if (req.primaryMorphology && req.primaryMorphology.length > 0) {
+            if (!req.primaryMorphology.some(val => input.primaryMorphology.includes(val))) return false;
+        }
+        
+        // 2. Validación de Características de Superficie
+        if (req.surfaceFeatures && req.surfaceFeatures.length > 0) {
+            if (!req.surfaceFeatures.some(val => input.surfaceFeatures.includes(val))) return false;
+        }
+        
+        // 3. Validación de Distribución (Con soporte para Jerarquía Anatómica)
+        if (req.distribution && req.distribution.length > 0) {
+            // Expandimos las localizaciones del input usando el Mapa Anatómico Jerárquico
+            const expandedDistribution = [...new Set(input.distribution.flatMap(d => getAnatomyAncestors(d)))];
+            if (!req.distribution.some(val => expandedDistribution.includes(val))) return false;
+        }
+        
+        return true;
+    }
+
+    // Fallback: Lógica legacy para protocolos no migrados
+    const hasMorphology = !req.morphology || req.morphology.length === 0 || 
         req.morphology.some(m => input.morphology.includes(m));
 
-    // Validar localización (debe coincidir al menos una si el protocolo la exige)
-    const hasLocation = req.location.length === 0 || 
-        req.location.some(l => input.location.includes(l));
+    // Expandimos también para el modo legacy por robustez
+    const expandedLegacyLocation = [...new Set(input.location.flatMap(l => getAnatomyAncestors(l)))];
+    const hasLocation = !req.location || req.location.length === 0 || 
+        req.location.some(l => expandedLegacyLocation.includes(l));
 
     return hasMorphology && hasLocation;
 }
@@ -111,20 +138,28 @@ export function computeSupportiveScore(protocol, input) {
 
 /**
  * Genera una explicación textual del por qué se seleccionó el protocolo.
+ * @param {Object} protocol - Protocolo v2.
+ * @param {Object} input - Entrada clínica normalizada.
  */
 export function buildProtocolExplanation(protocol, input) {
     const parts = [];
-    
-    if (matchesRequiredCriteria(protocol, input)) {
-        parts.push("Coincide en morfología y localización requerida.");
+    const req = protocol.match.required;
+    const hasExtendedOntology = req.primaryMorphology || req.surfaceFeatures || req.distribution;
+
+    if (hasExtendedOntology) {
+        parts.push("Coincidencia clínica de alta precisión (Ontología v2).");
+    } else {
+        parts.push("Coincide en morfología y localización (Modo compatibilidad).");
     }
 
     const score = computeSupportiveScore(protocol, input);
     if (score > 0) {
-        parts.push(`Suma ${score} punto(s) de apoyo por síntomas o duración compatible.`);
+        parts.push(`Suma ${score} punto(s) de evidencia adicional.`);
     }
 
-    if (!hasExclusion(protocol, input)) {
+    if (hasExclusion(protocol, input)) {
+        parts.push("¡Exclusión detectada!");
+    } else {
         parts.push("Sin exclusiones clínicas activas.");
     }
 
@@ -133,17 +168,16 @@ export function buildProtocolExplanation(protocol, input) {
 
 /**
  * Función principal que ejecuta el análisis v2.
- * @param {Object} clinicalInput - Datos clínicos capturados.
+ * @param {Object} clinicalInput - Datos clínicos capturados (pueden ser heterogéneos).
  */
 export function runProtocolEngineV2(clinicalInput) {
-    // 1. Normalizar entrada clínica
+    // 1. Normalizar entrada clínica (Capa de robustez v2)
     const input = normalizeClinicalInputV2(clinicalInput);
 
-
-    // 1. Validar catálogo de protocolos
+    // 2. Validar catálogo de protocolos
     const validProtocols = PROTOCOLS_V2.filter(p => validateProtocolV2Shape(p).isValid);
 
-    // 2. Procesar y filtrar
+    // 3. Procesar y filtrar con lógica prioritaria
     const results = validProtocols
         .map(protocol => {
             const isMatch = matchesRequiredCriteria(protocol, input);
@@ -163,20 +197,8 @@ export function runProtocolEngineV2(clinicalInput) {
                 explanation: buildProtocolExplanation(protocol, input)
             };
         })
-        .filter(res => res !== null) // Eliminar los que no hicieron match o fueron excluidos
-        .sort((a, b) => b.supportiveScore - a.supportiveScore); // Ordenar por score
+        .filter(res => res !== null) 
+        .sort((a, b) => b.supportiveScore - a.supportiveScore); 
 
     return results;
 }
-
-/* 
-// EJEMPLO DE USO MANUAL (NO INVASIVO):
-const testCase = {
-    morphology: ["papulas", "pustulas"],
-    location: ["rostro"],
-    symptoms: ["seborrea"],
-    duration: "cronico"
-};
-const results = runProtocolEngineV2(testCase);
-console.log("Resultados Motor V2:", results);
-*/

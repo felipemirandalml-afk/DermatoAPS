@@ -372,11 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function runAnalysis(data) {
-        const analysis = evaluateTriage(data);
+        // --- 1. EJECUCIÓN PARALELA / V2 PRIMERO (Armonización) ---
+        let v2Results = [];
+        if (typeof runPreviewAnalysisV2 === 'function') {
+            v2Results = runPreviewAnalysisV2(data);
+        }
+
+        const analysis = evaluateTriage(data, v2Results);
         const protocolMatches = findMatchingProtocols(data);
 
         // --- SEMIOLOGIC ANALYSIS PREVIEW (Fase Preview) ---
-        // Esta integración es una fase de prueba interna previa a la futura integración visual.
+        // ... (resto igual)
         const semiologicFeatures = [
             data.morphology,
             data.location,
@@ -401,19 +407,22 @@ document.addEventListener('DOMContentLoaded', () => {
         saveToDataset(data, analysis, protocolMatches, meta, semiologicResult);
         displayResults(data, analysis, protocolMatches, meta);
         
-        // --- MOTOR V2 PREVIEW ---
-        if (typeof runPreviewAnalysisV2 === 'function') {
-            const v2Results = runPreviewAnalysisV2(data);
-            renderV2Preview(v2Results);
-        }
+        // --- MOTOR V2 PREVIEW RENDERING ---
+        renderV2Preview(v2Results);
 
         renderSessionHistory(); // M1
     }
 
-    function evaluateTriage(data) {
+    function evaluateTriage(data, v2Results = null) {
         const redFlags = [];
         let triageLevel = 'GREEN';
         let explanation = '';
+
+        // --- 0. Armonización con Motor V2 (Prioridad de Seguridad) ---
+        // Si el motor v2 detectó un riesgo (RED/YELLOW), lo adoptamos para evitar contradicciones.
+        const v2HighestTriage = v2Results && v2Results.length > 0 
+           ? (v2Results.some(r => r.triage === 'RED') ? 'RED' : (v2Results.some(r => r.triage === 'YELLOW') ? 'YELLOW' : 'GREEN'))
+           : null;
 
         let getsGesAlert = false;
 
@@ -446,9 +455,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Apply Red Triage
-        if (redFlags.length > 0) {
+        if (redFlags.length > 0 || v2HighestTriage === 'RED') {
             triageLevel = 'RED';
-            explanation = `Se detectaron signos de alarma críticos (${redFlags[0]}). Se recomienda derivación dermatológica prioritaria (roja) para descartar cuadros graves o malignidad.`;
+            const primaryReason = redFlags.length > 0 ? redFlags[0] : "hallazgos avanzados del motor clínico v2";
+            explanation = `Se detectaron signos de alarma críticos (${primaryReason}). Se recomienda derivación dermatológica prioritaria (roja) para descartar cuadros graves o malignidad.`;
             if (getsGesAlert) {
                 explanation = 'Lesión pigmentada con múltiples criterios ABCDE detectados. Se recomienda derivación prioritaria para descartar melanoma.<br><span class="alert-ges">GES: Sospecha de Melanoma (Derivación en 7 días)</span>';
             }
@@ -459,11 +469,13 @@ document.addEventListener('DOMContentLoaded', () => {
             (data.morphology === 'vesicle/blister') ||
             data.duration === '> 3 months' ||
             (data.morphology === 'scaling lesion' && (data.distribution === 'extensor' || data.distribution === 'bilateral')) ||
-            (data.specialContext === 'immunosuppressed')
+            (data.specialContext === 'immunosuppressed') ||
+            v2HighestTriage === 'YELLOW'
         ) {
             triageLevel = 'YELLOW';
             let yellowReason = 'condición crónica o extensa';
-            if (data.specialContext === 'immunosuppressed') yellowReason = 'inmunosupresión basal del paciente';
+            if (v2HighestTriage === 'YELLOW') yellowReason = 'complejidad detectada por motor v2';
+            else if (data.specialContext === 'immunosuppressed') yellowReason = 'inmunosupresión basal del paciente';
             else if (data.duration === '> 3 months') yellowReason = 'cronicidad de las lesiones (>3 meses)';
             else if (data.morphology === 'scaling lesion') yellowReason = 'patrón sugerente de psoriasis u otra patología inflamatoria crónica';
             else if (data.morphology === 'vesicle/blister') yellowReason = 'vesículas/ampollas de causa a confirmar';
@@ -940,16 +952,37 @@ ${protocolBlock}
 
         const triageClasses = { GREEN: 'v2-badge-green', YELLOW: 'v2-badge-yellow', RED: 'v2-badge-red' };
 
-        list.innerHTML = results.slice(0, 3).map((res, idx) => `
-            <li class="v2-preview-item">
-                <div class="v2-item-header">
-                    <span class="v2-rank">#${idx + 1}</span>
-                    <span class="v2-label">${res.label}</span>
-                    <span class="v2-badge ${triageClasses[res.triage] || ''}">${res.triage}</span>
-                    <span class="v2-score">score ${res.supportiveScore}</span>
-                </div>
-                <p class="v2-explanation">${res.explanation}</p>
-            </li>
-        `).join('');
+        // Obtener localizaciones del input para mostrar trazado (Refinamiento UI)
+        const rawLocation = currentAnalysisData?.formData?.location || '';
+        
+        list.innerHTML = results.slice(0, 3).map((res, idx) => {
+            // Calcular trazado anatómico si aplica jerarquía
+            let anatomyTraceHtml = '';
+            if (rawLocation && typeof window.getAnatomyAncestors === 'function') {
+                const ancestors = window.getAnatomyAncestors(rawLocation);
+                if (ancestors.length > 1) {
+                    const path = ancestors.reverse().join(' › ');
+                    anatomyTraceHtml = `<div class="v2-anatomy-trace" title="Jerarquía anatómica resuelta">${path}</div>`;
+                }
+            }
+
+            // Destacar si el match es por la nueva ontología extendida
+            const isOntologyV2 = res.explanation.includes("Ontología v2");
+            const matchTypeHtml = isOntologyV2 ? `<span class="v2-match-type">✨ Match Alta Precisión</span>` : '';
+
+            return `
+                <li class="v2-preview-item">
+                    <div class="v2-item-header">
+                        <span class="v2-rank">#${idx + 1}</span>
+                        <span class="v2-label">${res.label}</span>
+                        <span class="v2-badge ${triageClasses[res.triage] || ''}">${res.triage}</span>
+                        <span class="v2-score">score ${res.supportiveScore}</span>
+                    </div>
+                    <p class="v2-explanation">${res.explanation}</p>
+                    ${anatomyTraceHtml}
+                    ${matchTypeHtml}
+                </li>
+            `;
+        }).join('');
     }
 });

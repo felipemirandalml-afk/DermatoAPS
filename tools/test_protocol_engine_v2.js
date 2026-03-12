@@ -8,7 +8,7 @@ import { runProtocolEngineV2 } from '../engine/protocol_engine.v2.js';
 
 const TEST_CASES = [
     {
-        name: "1. Acné (Entrada Cruda: papula, facial, crónico)",
+        name: "1. Acné (Morfología: papulas, Localización: rostro)",
         input: {
             morphology: ["papula", "pustula"],
             location: ["facial"],
@@ -18,7 +18,7 @@ const TEST_CASES = [
         expectedId: "acne_inflamatorio_leve"
     },
     {
-        name: "2. Dermatitis Atópica (Entrada Cruda: eccema, pliegues, picazon)",
+        name: "2. Dermatitis Atópica (Distribución: pliegues/flexuras, Síntomas: picazon)",
         input: {
             morphology: ["eccema"],
             location: ["pliegues"],
@@ -28,29 +28,28 @@ const TEST_CASES = [
         expectedId: "dermatitis_atopica_leve"
     },
     {
-        name: "3. Pitiriasis Versicolor (Entrada Cruda: macula, hipopigmentada)",
+        name: "3. Pitiriasis Versicolor (Morfología: macula, Distribución: tronco)",
         input: {
-            morphology: ["macula", "hipopigmentada"],
+            morphology: ["macula", "descamacion"],
             location: ["tronco"],
             duration: "meses"
         },
         expectedId: "pitiriasis_versicolor"
     },
     {
-        name: "4. Queratosis Actínica (Entrada Cruda: cara, ardor)",
+        name: "4. Queratosis Actínica (Superficie: áspera, Distribución: fotoexpuesta)",
         input: {
-            morphology: ["lesion eritematosa"],
+            morphology: ["áspera"],
             location: ["cara"],
-            symptoms: ["ardor"],
             duration: "cronico"
         },
         expectedId: "queratosis_actinica"
     },
     {
-        name: "5. Psoriasis (Entrada Cruda: codo, rodilla, placa, escama)",
+        name: "5. Psoriasis (Morfología: placa, Superficie: escamosa, Distribución: codos)",
         input: {
-            morphology: ["placa", "escama"],
-            location: ["codo", "rodilla"],
+            morphology: ["placa", "escamosa"],
+            location: ["codos"],
             duration: "cronico"
         },
         expectedId: "psoriasis_vulgar_leve"
@@ -71,6 +70,60 @@ const TEST_CASES = [
             location: ["pies"]
         },
         expectedId: null
+    },
+    {
+        name: "8. Jerarquía Anatómica (Entrada: frente -> Match: rostro)",
+        input: {
+            morphology: ["papula", "pustula"],
+            location: ["frente"],
+            duration: "cronico"
+        },
+        expectedId: "acne_inflamatorio_leve"
+    },
+    {
+        name: "9. Rosácea (Eritema persistente en rostro)",
+        input: {
+            morphology: ["placa"], // Mapeado desde eritema
+            surfaceFeatures: ["exudativa"],
+            location: ["mejilla"],
+            symptoms: ["ardor"]
+        },
+        expectedId: "rosacea_eritemato_telangiectasica"
+    },
+    {
+        name: "10. Escabiosis (Pápulas costrosas generalizadas)",
+        input: {
+            morphology: ["papula"],
+            surfaceFeatures: ["costrosa"],
+            distribution: ["generalizada"],
+            symptoms: ["prurito nocturno"]
+        },
+        expectedId: "escabiosis_adulto"
+    },
+    {
+        name: "Caso 11: Tiña Corporis (Tronco)",
+        input: { morphology: ["placa"], surfaceFeatures: ["descamativa"], location: ["trunk"] },
+        expectedId: "tinea_corporis"
+    },
+    {
+        name: "Caso 12: Rosácea con Riesgo Ocular (Blindaje Proactivo)",
+        input: { 
+            morphology: ["placa"], 
+            surfaceFeatures: ["exudativa"], 
+            location: ["face"], 
+            clinicalNotes: "Presenta lagrimeo y sensación de cuerpo extraño en ojo derecho." 
+        },
+        expectedId: "rosacea_eritemato_telangiectasica"
+    },
+    {
+        name: "Caso 13: Escabiosis con Contacto Familiar (Blindaje Proactivo)",
+        input: { 
+            morphology: ["papula"], 
+            surfaceFeatures: ["costrosa"], 
+            location: ["flexural"], 
+            clinicalNotes: "Su pareja tiene síntomas similares en las manos." 
+        },
+        expectedId: "escabiosis_adulto"
     }
 ];
 
